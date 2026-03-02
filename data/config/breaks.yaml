@@ -1,0 +1,9 @@
+breaks:
+  - id: winterim
+    name: Winterim
+    start_date: 2026-03-09
+    end_date: 2026-03-15
+  - id: spring-break
+    name: Spring Break
+    start_date: 2026-03-16
+    end_date: 2026-03-22

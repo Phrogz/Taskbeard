@@ -1,0 +1,25 @@
+default_hours_per_day:
+  mon: 2
+  tue: 2
+  wed: 2
+  thu: 2
+  fri: 0
+  sat: 0
+  sun: 4
+
+overrides:
+  - date: 2026-03-08
+    hours: 0
+    label: No Practice
+  - date: 2026-04-07
+    hours: 5
+    label: Extended Practice
+  - date: 2026-04-10
+    hours: 6
+    label: Dinner with the Robot
+  - date: 2026-03-22
+    hours: 8
+    label: Extended Practice
+  - date: 2026-03-23
+    hours: 8
+    label: Extended Practice

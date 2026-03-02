@@ -1,0 +1,22 @@
+# --- Python (uv) ---
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.ruff_cache/
+.pytest_cache/
+uv.lock # Optional: Remove if tracking dependencies in Git
+.env
+*.egg-info
+
+# --- Vite / Frontend ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+*.swp

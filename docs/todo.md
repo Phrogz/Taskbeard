@@ -1,0 +1,18 @@
+- [x] Move all data files into just `data`; no `tasks` subdirectory for tasks YAML.
+- [x] Clicking on a task shows the context menu, but mousedown+drag is not treated as a click.
+- [x] Toggling complete/incomplete for a task immediately changes visible status and deselects it.
+- [x] Double-clicking empty day-cell background creates a 3-day `New Task` and enters name edit mode, without conflicting with task double-click rename.
+- [x] Tasks support priority aliases (`1/2/3`, `high/med|medium/low`, `need/want/nice`) with default `want`.
+- [x] `need` tasks render with bold text.
+- [x] `want` tasks render with italic text.
+- [x] Task hover tooltip shows `Assigned: ` followed by alphabetically sorted member names, comma-space separated.
+- [x] Dragging a task to another team sets it to just that team; Option-drag adds team association (copy semantics).
+- [x] Selecting a multi-team task highlights only the clicked instance; deleting that instance unassociates only that team.
+- [x] Navigation uses `Tasks`, `Team`, and `Config`; `Team` view renders member sub-rows per team with colored assignment fills.
+- [x] Script logic from `taskmanagement/*.py` consolidated into root `main.py`; `pyproject.toml` scripts now point to Click-based commands.
+- [x] AI-facing and human-facing docs updated; checklist retained here for resumable tracking.
+
+- [ ] Put `logo.svg` in the top-left of the grid.
+- [ ] Task context menu should include an `Assign To` submenu listing every member with checkmarks for current assignments; clicking a member toggles assignment without dismissing menu/submenu; Esc or outside click dismisses. List members assigned to the task's team(s) first (alphabetically), then a separator, then all other members.
+- [ ] Make `Team` view look just like `Tasks` view, with the same main task row plus extra member rows.
+- [ ] Replace team `color` with ordered `colors` array of `{ fg, bg }` objects; first color is default task color, subsequent colors handle same-day overlap; derive variations with same hue (different saturation/value) and choose black/white `fg` for contrast.

@@ -1,0 +1,487 @@
+tasks:
+- id: design-banner
+  title: Design Banner
+  start_date: '2026-02-18'
+  end_date: '2026-02-21'
+  est_hours: 3
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: andy
+  priority: want
+- id: battery-leads-painting
+  title: Battery Leads + Painting
+  start_date: '2026-02-18'
+  end_date: '2026-02-21'
+  est_hours: 3
+  completed: true
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: order-banner
+  title: Order Banner
+  start_date: '2026-02-23'
+  end_date: '2026-02-24'
+  est_hours: 1
+  completed: false
+  teams: admin
+  depends_on: design-banner
+  assigned_to: coach-rider
+  priority: want
+- id: order-pins
+  title: Order Pins
+  start_date: '2026-02-23'
+  end_date: '2026-02-24'
+  est_hours: 1
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: oliver-p
+  priority: want
+- id: match-scout-plan
+  title: Match Scout Plan
+  start_date: '2026-03-02'
+  end_date: '2026-03-03'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: scout-plan
+  title: Scout Plan
+  start_date: '2026-03-02'
+  end_date: '2026-03-03'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: one-sheet-facts
+  title: One-Sheet Facts
+  start_date: '2026-03-04'
+  end_date: '2026-03-05'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: place-roborio
+  title: Place RoboRIO, APU, Battery, etc.
+  start_date: '2026-02-17'
+  end_date: '2026-02-20'
+  est_hours: 4
+  completed: false
+  teams: electrical
+  depends_on: null
+  assigned_to: grady
+  priority: want
+- id: wire-intake
+  title: Wire up Intake
+  start_date: '2026-02-21'
+  end_date: '2026-02-23'
+  est_hours: 3
+  completed: false
+  teams: electrical
+  depends_on: place-roborio
+  assigned_to: hayden
+  priority: want
+- id: wire-transit
+  title: Wire up Transit
+  start_date: '2026-02-24'
+  end_date: '2026-02-26'
+  est_hours: 3
+  completed: false
+  teams: electrical
+  depends_on: place-roborio
+  assigned_to: clara
+  priority: want
+- id: attach-cameras
+  title: Attach Cameras
+  start_date: '2026-03-02'
+  end_date: '2026-03-03'
+  est_hours: 2
+  completed: false
+  teams:
+  - electrical
+  - programming
+  depends_on: null
+  assigned_to:
+  - colin
+  - grady
+  priority: want
+- id: wire-shooter-feeder
+  title: Wire Up Shooter + Feeder
+  start_date: '2026-03-04'
+  end_date: '2026-03-05'
+  est_hours: 4
+  completed: false
+  teams: electrical
+  depends_on: wire-transit
+  assigned_to: null
+  priority: want
+- id: order-bumpers
+  title: Order Bumpers
+  start_date: '2026-02-16'
+  end_date: '2026-02-16'
+  est_hours: 2
+  completed: false
+  teams: build
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: robot-cart
+  title: Robot Cart
+  start_date: '2026-02-18'
+  end_date: '2026-02-21'
+  est_hours: 4
+  completed: false
+  teams: build
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: build-attach-intake
+  title: Build + Attach Intake
+  start_date: '2026-02-17'
+  end_date: '2026-02-23'
+  est_hours: 6
+  completed: true
+  teams: build
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: attach-shooter
+  title: Attach Shooter
+  start_date: '2026-02-27'
+  end_date: '2026-03-01'
+  est_hours: 4
+  completed: false
+  teams: build
+  depends_on: null
+  assigned_to: alexander
+  priority: want
+- id: revise-shooter
+  title: Revise Tweaks, Shooter
+  start_date: '2026-03-02'
+  end_date: '2026-03-05'
+  est_hours: 3
+  completed: false
+  teams: build
+  depends_on: attach-shooter
+  assigned_to: null
+  priority: want
+- id: build-hopper-transit
+  title: Build Hopper/ Transit
+  start_date: '2026-03-03'
+  end_date: '2026-03-05'
+  est_hours: 4
+  completed: false
+  teams: build
+  depends_on: attach-shooter
+  assigned_to: owen
+  priority: want
+- id: vision-l1-testing
+  title: Vision + L1 On Testing + Fixes
+  start_date: '2026-03-02'
+  end_date: '2026-03-05'
+  est_hours: 6
+  completed: false
+  teams: programming
+  depends_on: attach-cameras
+  assigned_to: null
+  priority: want
+- id: shooter-kicker-control
+  title: Shooter + Kicker Control
+  start_date: '2026-02-17'
+  end_date: '2026-02-20'
+  est_hours: 4
+  completed: false
+  teams: programming
+  depends_on: null
+  assigned_to: badri
+  priority: want
+- id: strategy-dashboard
+  title: Strategy Dashboard
+  start_date: '2026-02-21'
+  end_date: '2026-02-24'
+  est_hours: 5
+  completed: false
+  teams: programming
+  depends_on: null
+  assigned_to: maggie
+  priority: want
+- id: intake-transit-control
+  title: Intake + Transit Control
+  start_date: '2026-02-25'
+  end_date: '2026-03-01'
+  est_hours: 5
+  completed: false
+  teams: programming
+  depends_on:
+  - wire-intake
+  - wire-transit
+  assigned_to: sterling
+  priority: want
+- id: current-limiting
+  title: Current Limiting
+  start_date: '2026-02-26'
+  end_date: '2026-03-01'
+  est_hours: 3
+  completed: false
+  teams: programming
+  depends_on: null
+  assigned_to: eli
+  priority: want
+- id: cool-led-effects
+  title: Cool LED Effects
+  start_date: '2026-02-24'
+  end_date: '2026-03-01'
+  est_hours: 6
+  completed: false
+  teams:
+  - programming
+  - electrical
+  depends_on: null
+  assigned_to:
+  - oliver-j
+  - clara
+  priority: want
+- id: ar-simulation
+  title: Augmented Reality Simulation
+  start_date: '2026-02-28'
+  end_date: '2026-03-08'
+  est_hours: 8
+  completed: false
+  teams: programming
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: lay-out-pit
+  title: Lay Out Pit
+  start_date: '2026-03-23'
+  end_date: '2026-03-23'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: pit-scouting-material
+  title: Pit Scouting Material
+  start_date: '2026-03-23'
+  end_date: '2026-03-25'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: packing-list
+  title: Packing List
+  start_date: '2026-03-23'
+  end_date: '2026-03-25'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: award-pitches
+  title: Produce Award Pitches
+  start_date: '2026-03-25'
+  end_date: '2026-03-28'
+  est_hours: 3
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: verify-one-sheet
+  title: Verify One-Sheet
+  start_date: '2026-03-27'
+  end_date: '2026-03-29'
+  est_hours: 1
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: sponsor-panel
+  title: Sponsor Panel
+  start_date: '2026-03-25'
+  end_date: '2026-03-28'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: sales-pitch
+  title: Produce Sales Pitch
+  start_date: '2026-03-30'
+  end_date: '2026-04-01'
+  est_hours: 3
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: one-sheet-print
+  title: One-Sheet Design + Print
+  start_date: '2026-03-30'
+  end_date: '2026-04-02'
+  est_hours: 3
+  completed: false
+  teams: business
+  depends_on: verify-one-sheet
+  assigned_to: null
+  priority: want
+- id: pre-match-checklist
+  title: Pre-Match Checklist
+  start_date: '2026-03-31'
+  end_date: '2026-04-02'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: googly-eyes
+  title: Lots of Googly Eyes!!
+  start_date: '2026-04-02'
+  end_date: '2026-04-04'
+  est_hours: 2
+  completed: false
+  teams: business
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: attach-robot-leds
+  title: Attach Robot LEDs
+  start_date: '2026-03-23'
+  end_date: '2026-03-24'
+  est_hours: 3
+  completed: false
+  teams: electrical
+  depends_on: cool-led-effects
+  assigned_to: null
+  priority: want
+- id: wire-management
+  title: Wire Management
+  start_date: '2026-03-25'
+  end_date: '2026-03-30'
+  est_hours: 3
+  completed: false
+  teams: electrical
+  depends_on: attach-robot-leds
+  assigned_to: null
+  priority: want
+- id: driver-station-leds
+  title: Driver Station LEDs
+  start_date: '2026-03-30'
+  end_date: '2026-04-01'
+  est_hours: 4
+  completed: false
+  teams:
+  - electrical
+  - programming
+  depends_on: wire-management
+  assigned_to: null
+  priority: want
+- id: check-connections
+  title: Check Connections
+  start_date: '2026-04-03'
+  end_date: '2026-04-04'
+  est_hours: 2
+  completed: false
+  teams: electrical
+  depends_on: wire-management
+  assigned_to: null
+  priority: want
+- id: wiring-diagram
+  title: Wiring Diagram
+  start_date: '2026-03-27'
+  end_date: '2026-03-30'
+  est_hours: 3
+  completed: false
+  teams: electrical
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: revise-robot-build
+  title: Revise Robot Build
+  start_date: '2026-03-23'
+  end_date: '2026-03-30'
+  est_hours: 8
+  completed: false
+  teams: build
+  depends_on: build-hopper-transit
+  assigned_to: connor
+  priority: want
+- id: drive-team-practice
+  title: Drive Team Practice
+  start_date: '2026-03-31'
+  end_date: '2026-04-02'
+  est_hours: 6
+  completed: false
+  teams: build
+  depends_on: revise-robot-build
+  assigned_to: canon
+  priority: want
+- id: carry-handles
+  title: Carry Handles
+  start_date: '2026-03-31'
+  end_date: '2026-04-02'
+  est_hours: 2
+  completed: false
+  teams: build
+  depends_on: null
+  assigned_to: null
+  priority: want
+- id: aim-shoot-test-fix
+  title: Aim + Shoot Test + Fix
+  start_date: '2026-03-23'
+  end_date: '2026-03-26'
+  est_hours: 6
+  completed: false
+  teams: programming
+  depends_on: shooter-kicker-control
+  assigned_to: null
+  priority: want
+- id: test-autos
+  title: Test Autos
+  start_date: '2026-03-30'
+  end_date: '2026-04-02'
+  est_hours: 5
+  completed: false
+  teams: programming
+  depends_on: plan-build-autos
+  assigned_to: null
+  priority: want
+- id: polish-code
+  title: Polish Code
+  start_date: '2026-04-03'
+  end_date: '2026-04-05'
+  est_hours: 5
+  completed: false
+  teams: programming
+  depends_on: test-autos
+  assigned_to: null
+  priority: want
+- id: plan-build-autos
+  title: Plan + Build Autos
+  start_date: '2026-03-23'
+  end_date: '2026-03-30'
+  est_hours: 8
+  completed: false
+  teams:
+  - programming
+  - build
+  depends_on: aim-shoot-test-fix
+  assigned_to:
+  - ralph
+  - zach
+  priority: want

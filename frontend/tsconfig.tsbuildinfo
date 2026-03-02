@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/studentpanel.tsx","./src/components/timelinegrid.tsx","./src/pages/boardpage.tsx","./src/pages/configpage.tsx","./src/pages/teampage.tsx","./src/services/plannerapi.ts"],"version":"5.9.3"}
