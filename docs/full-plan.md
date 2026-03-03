@@ -87,7 +87,7 @@ All UI edits write back to these files. Any external edit to these files trigger
 
 ## Recently Implemented
 - Task data file moved to `data/tasks.yaml` and backend/task API path references updated.
-- Task priority normalization added (`1/high/need`, `2/med/medium/want`, `3/low/nice`) with canonical storage as `need|want|nice` and default `want`.
+- Task priority normalization added (`1/high/urgent`, `2/med/medium/need`, `3/low/want`) with canonical storage as `urgent|need|want` and default `need`.
 - Task-card interactions updated so click opens context menu while drag gestures do not trigger click behavior.
 - Complete/incomplete toggle now updates immediately in UI and deselects the active task instance.
 - Empty-cell background double-click creates a 3-day `New Task` on the clicked team and enters name edit mode.

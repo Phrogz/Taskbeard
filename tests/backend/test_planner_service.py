@@ -53,7 +53,7 @@ def test_planner_prefers_members_and_normalizes_task_lists(tmp_path):
     assert task["teams"] == ["build"]
     assert task["depends_on"] == []
     assert task["assigned_to"] == ["m1"]
-    assert task["priority"] == "need"
+    assert task["priority"] == "urgent"
 
 
 def test_planner_returns_empty_members_when_members_file_missing(tmp_path):

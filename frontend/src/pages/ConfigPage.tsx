@@ -8,7 +8,15 @@ type Props = {
   onSaved: () => void;
 };
 
-type ConfigKey = "season" | "practices" | "events" | "breaks" | "teams" | "members" | "tasks";
+type ConfigKey =
+  | "season"
+  | "practices"
+  | "events"
+  | "breaks"
+  | "teams"
+  | "colors"
+  | "members"
+  | "tasks";
 
 type ConfigDoc = {
   key: ConfigKey;
@@ -21,6 +29,7 @@ const CONFIG_DOCS: ConfigDoc[] = [
   { key: "events", title: "Events + Travel" },
   { key: "breaks", title: "Breaks" },
   { key: "teams", title: "Teams + Colors" },
+  { key: "colors", title: "Color Palettes" },
   { key: "members", title: "Members + Team Membership" },
   { key: "tasks", title: "Tasks" },
 ];
@@ -45,6 +54,7 @@ export function ConfigPage({ planner, onSaved }: Props) {
     events: toYamlText({ events: planner.events }),
     breaks: toYamlText({ breaks: planner.breaks }),
     teams: toYamlText({ teams: planner.teams }),
+    colors: toYamlText({ colors: planner.colors }),
     members: toYamlText({ members: planner.members }),
     tasks: toYamlText({ tasks: planner.tasks }),
   });

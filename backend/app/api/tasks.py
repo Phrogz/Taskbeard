@@ -16,11 +16,13 @@ POLYMORPHIC_TASK_FIELDS = ("teams", "depends_on", "assigned_to")
 
 def _normalize_priority(value: Any) -> str:
     raw = str(value).strip().lower() if value is not None else ""
-    if raw in {"1", "high", "need"}:
+    if raw in {"1", "high", "urgent"}:
+        return "urgent"
+    if raw in {"2", "med", "medium", "need"}:
         return "need"
-    if raw in {"3", "low", "nice"}:
-        return "nice"
-    return "want"
+    if raw in {"3", "low", "want"}:
+        return "want"
+    return "need"
 
 
 def _normalize_id_list(value: Any) -> list[str]:
@@ -111,7 +113,7 @@ async def create_task(payload: dict, request: Request):
     item.setdefault("teams", [])
     item.setdefault("assigned_to", [])
     item.setdefault("completed", False)
-    item.setdefault("priority", "want")
+    item.setdefault("priority", "need")
     tasks.append(item)
 
     value = _write_tasks(store, tasks)

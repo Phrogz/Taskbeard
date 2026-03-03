@@ -2,7 +2,7 @@
 - [x] Clicking on a task shows the context menu, but mousedown+drag is not treated as a click.
 - [x] Toggling complete/incomplete for a task immediately changes visible status and deselects it.
 - [x] Double-clicking empty day-cell background creates a 3-day `New Task` and enters name edit mode, without conflicting with task double-click rename.
-- [x] Tasks support priority aliases (`1/2/3`, `high/med|medium/low`, `need/want/nice`) with default `want`.
+- [x] Tasks support priority aliases (`1/2/3`, `high/med|medium/low`, `urgent/need/want`) with default `need`.
 - [x] `need` tasks render with bold text.
 - [x] `want` tasks render with italic text.
 - [x] Task hover tooltip shows `Assigned: ` followed by alphabetically sorted member names, comma-space separated.
@@ -28,8 +28,10 @@
 - [x] Add per-file `Update` buttons for YAML config files.
 - [x] `Update`/`Update All` must validate YAML syntax first, then backend semantic validity, show detailed warnings on failure, and overwrite file only on success.
 - [x] Rename `Save All` to `Update All`.
-- [ ] Need a way for an admin to easily bulk-add tasks for a team. Thinking there's a new view ("Task List") that has a table per team listing the task name, priority, est hours only, with a blank row at the end, and typing in that blank row immediately adds a new blank row below it. Quick type/tab/type/tab enter to add many tasks. Indeed, I need to test this for all the code tasks.
-- [ ] Low-opacity for all day names/numbers that are in the past.
-- [ ] Ensure tasks can overlap breaks.
-- [ ] Hovering a day should show how many hours of practice time there are.
-- [ ] Days that have overrides should somehow be visually differentiated, with a tooltip showing the override details. (Both cancelling a practice, or extending a practice.)
+- [x] Need a way for an admin to easily bulk-add tasks for a team. Thinking there's a new view ("Task List") that has a table per team listing the task name, priority, est hours only, with a blank row at the end, and typing in that blank row immediately adds a new blank row below it. Quick type/tab/type/tab enter to add many tasks. Indeed, I need to test this for all the code tasks.
+- [x] Low-opacity for all day names/numbers that are in the past.
+- [x] Ensure tasks can overlap breaks.
+- [x] Hovering a day should show how many hours of practice time there are.
+- [x] Days that have overrides should somehow be visually differentiated, with a tooltip showing the override details. (Both cancelling a practice, or extending a practice.)
+- [ ] Change the default hours for a new task on the Task List page to 4 instead of 0.
+- [ ] Change the hash for the page when switching views, so that back/forward buttons work as expected.

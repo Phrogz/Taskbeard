@@ -17,13 +17,13 @@ def test_normalize_task_converts_scalar_and_null_to_lists():
     assert task["teams"] == ["build"]
     assert task["depends_on"] == []
     assert task["assigned_to"] == ["member-a"]
-    assert task["priority"] == "want"
+    assert task["priority"] == "need"
 
 
 def test_normalize_task_priority_aliases_to_canonical_values():
-    assert _normalize_task({"priority": "1"})["priority"] == "need"
-    assert _normalize_task({"priority": "medium"})["priority"] == "want"
-    assert _normalize_task({"priority": "LOW"})["priority"] == "nice"
+    assert _normalize_task({"priority": "1"})["priority"] == "urgent"
+    assert _normalize_task({"priority": "medium"})["priority"] == "need"
+    assert _normalize_task({"priority": "LOW"})["priority"] == "want"
 
 
 def test_serialize_task_uses_null_scalar_or_array_by_count():
@@ -48,4 +48,4 @@ def test_serialize_task_uses_null_scalar_or_array_by_count():
     assert multiple["teams"] == ["build", "code"]
     assert multiple["depends_on"] == ["task-a", "task-b"]
     assert multiple["assigned_to"] == ["m1", "m2"]
-    assert multiple["priority"] == "need"
+    assert multiple["priority"] == "urgent"

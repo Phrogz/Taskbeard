@@ -1,7 +1,7 @@
 export type Team = {
   id: string;
   name: string;
-  colors: Array<{ fg: string; bg: string }>;
+  colors: string;
   color?: string;
 };
 
@@ -21,7 +21,7 @@ export type TaskItem = {
   depends_on?: string[];
   assigned_to: string[];
   completed: boolean;
-  priority: "need" | "want" | "nice";
+  priority: "urgent" | "need" | "want";
 };
 
 export type PlannerPayload = {
@@ -39,6 +39,7 @@ export type PlannerPayload = {
   }>;
   breaks: Array<{ id: string; name: string; start_date: string; end_date: string }>;
   teams: Team[];
+  colors: Record<string, string[]>;
   members: Student[];
   tasks: TaskItem[];
   dates: Array<{ date: string; past: boolean; is_today: boolean; weekday: string }>;

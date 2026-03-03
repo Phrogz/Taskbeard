@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BoardPage } from "./pages/BoardPage";
 import { ConfigPage } from "./pages/ConfigPage";
+import { TaskListPage } from "./pages/TaskListPage";
 import {
   getPlanner,
   subscribePlannerUpdates,
@@ -9,7 +10,7 @@ import {
   type TaskItem
 } from "./services/plannerApi";
 
-type Tab = "tasks" | "config";
+type Tab = "tasks" | "task-list" | "config";
 
 type SelectedTaskPlacement = {
   taskId: string;
@@ -34,7 +35,7 @@ export function App() {
     teams: [...(task.teams ?? [])],
     depends_on: [...(task.depends_on ?? [])],
     assigned_to: [...(task.assigned_to ?? [])],
-    priority: task.priority ?? "want"
+    priority: task.priority ?? "need"
   });
 
   const cloneTasks = (tasks: TaskItem[]): TaskItem[] => tasks.map((task) => cloneTask(task));
@@ -337,7 +338,7 @@ export function App() {
       depends_on: [],
       assigned_to: [],
       completed: false,
-      priority: "want"
+      priority: "need"
     };
 
     setSelectedTaskPlacement({ taskId: newTask.id, teamId });
@@ -370,6 +371,49 @@ export function App() {
     setRenamingTaskId(null);
     setRenameDraft("");
     await saveTasks(nextTasks);
+  };
+
+  const onCommitTaskRow = async (
+    teamId: string,
+    row: { task_id: string | null; title: string; priority: TaskItem["priority"]; est_hours: number }
+  ) => {
+    if (!planner) return;
+    const title = row.title.trim();
+    if (!title) return;
+
+    const estHours = Math.max(0, Number(row.est_hours ?? 0));
+    const nextTasks = cloneTasks(planner.tasks);
+
+    if (row.task_id) {
+      const index = nextTasks.findIndex((task) => task.id === row.task_id);
+      if (index === -1) return;
+      const current = nextTasks[index];
+      nextTasks[index] = {
+        ...current,
+        title,
+        priority: row.priority,
+        est_hours: estHours,
+        teams: current.teams.includes(teamId) ? current.teams : [...current.teams, teamId],
+      };
+      await saveTasks(nextTasks);
+      return;
+    }
+
+    const seasonStart = planner.season.start_date;
+    const newTask: TaskItem = {
+      id: `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      title,
+      teams: [teamId],
+      start_date: seasonStart,
+      end_date: calculateEndDate(seasonStart, estHours, planner.practices),
+      est_hours: estHours,
+      depends_on: [],
+      assigned_to: [],
+      completed: false,
+      priority: row.priority,
+    };
+
+    await saveTasks([...nextTasks, newTask]);
   };
 
   const onCancelRename = () => {
@@ -428,6 +472,9 @@ export function App() {
             People
           </button>
         </div>
+        <button className={tab === "task-list" ? "active" : ""} onClick={() => setTab("task-list")}>
+          Task List
+        </button>
         <button className={tab === "config" ? "active" : ""} onClick={() => setTab("config")}>
           Config
         </button>
@@ -456,6 +503,8 @@ export function App() {
           onCancelRename={onCancelRename}
           onCreateTaskAt={onCreateTaskAt}
         />
+      ) : tab === "task-list" ? (
+        <TaskListPage planner={planner} onCommitTaskRow={onCommitTaskRow} />
       ) : (
         <ConfigPage
           planner={planner}

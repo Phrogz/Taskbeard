@@ -35,7 +35,7 @@ type Props = {
   onCreateTaskAt: (startDate: string, teamId: string) => void;
 };
 
-const DAY_WIDTH = 35.2;
+const DAY_WIDTH = 35;
 const CARD_HEIGHT = 30;
 const CARD_TOP = 2;
 const CARD_BOTTOM = 2;
@@ -113,6 +113,7 @@ export function TimelineGrid({
   const seasonEnd = planner.season.end_date;
   const days = planner.dates;
   const totalWidth = days.length * DAY_WIDTH;
+  const dayColumns = `repeat(${days.length}, ${DAY_WIDTH}px)`;
   const resizeStateRef = useRef<{
     task: TaskItem;
     side: "left" | "right";
@@ -200,6 +201,37 @@ export function TimelineGrid({
     });
     return values;
   }, [planner.breaks]);
+
+  const practiceOverrideByDate = useMemo(() => {
+    const values = new Map<string, { hours: number; label: string }>();
+    (planner.practices.overrides ?? []).forEach((item) => {
+      const date = String(item.date).slice(0, 10);
+      values.set(date, {
+        hours: Number(item.hours ?? 0),
+        label: String(item.label ?? "Override"),
+      });
+    });
+    return values;
+  }, [planner.practices.overrides]);
+
+  const practiceHoursByDate = useMemo(() => {
+    const defaults = planner.practices.default_hours_per_day ?? {};
+    const weekdayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const values = new Map<string, number>();
+
+    days.forEach((day) => {
+      const override = practiceOverrideByDate.get(day.date);
+      if (override) {
+        values.set(day.date, override.hours);
+        return;
+      }
+      const weekdayIndex = new Date(`${day.date}T00:00:00`).getDay();
+      const weekdayKey = weekdayKeys[weekdayIndex];
+      values.set(day.date, Number(defaults[weekdayKey] ?? 0));
+    });
+
+    return values;
+  }, [days, planner.practices.default_hours_per_day, practiceOverrideByDate]);
 
   const laneData = useMemo(() => {
     return planner.teams.map((team) => {
@@ -311,6 +343,7 @@ export function TimelineGrid({
       return;
     }
     const copyMode = ev.altKey;
+    ev.dataTransfer.setData("text/plain", taskId);
     ev.dataTransfer.setData("task_id", taskId);
     ev.dataTransfer.setData("source_team_id", teamId);
     ev.dataTransfer.setData("copy_mode", copyMode ? "1" : "0");
@@ -443,23 +476,23 @@ export function TimelineGrid({
           <img src={logo} alt="Taskbeard logo" className="board-logo" />
         </div>
         <div className="timeline-header-wrap" style={{ width: totalWidth }}>
-          <div className="timeline-months">
+          <div className="timeline-months" style={{ width: totalWidth, gridTemplateColumns: dayColumns }}>
             {monthSpans.map((month) => (
               <div
                 key={month.key}
                 className="month-cell"
-                style={{ width: month.spanDays * DAY_WIDTH }}
+                style={{ gridColumn: `span ${month.spanDays}` }}
               >
                 {month.label}
               </div>
             ))}
           </div>
-          <div className="timeline-header" style={{ width: totalWidth }}>
+          <div className="timeline-header" style={{ width: totalWidth, gridTemplateColumns: dayColumns }}>
             {days.map((day) => (
               <div
                 key={day.date}
-                className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
-                title={day.date}
+                className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
               >
                 <div>{day.weekday}</div>
                 <div className="day-num">{day.date.slice(8, 10)}</div>
@@ -515,18 +548,19 @@ export function TimelineGrid({
           <div key={team.id} className="lane-row">
             <div
               className="lane-label"
-              style={{ borderLeftColor: teamDefaultColor(team).bg, minHeight: laneHeight }}
+              style={{ borderLeftColor: teamDefaultColor(team, planner.colors).bg, minHeight: laneHeight }}
             >
               {team.name}
             </div>
-            <div className="lane-grid" style={{ width: totalWidth, minHeight: laneHeight }}>
+            <div className="lane-grid" style={{ width: totalWidth, minHeight: laneHeight, gridTemplateColumns: dayColumns }}>
               {days.map((day) => (
                 <div
                   key={`${team.id}-${day.date}`}
-                  className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                  className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
                   onDragOver={onLaneDragOver}
                   onDrop={(ev) => onDrop(ev, day.date, team.id)}
                   onDoubleClick={() => onCreateTaskAt(day.date, team.id)}
+                  title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
                   style={{ minHeight: laneHeight }}
                 />
               ))}
@@ -547,8 +581,14 @@ export function TimelineGrid({
                 const otherMembers = planner.members
                   .filter((member) => !inTaskTeamIds.has(member.id))
                   .sort((left, right) => left.name.localeCompare(right.name));
-                const priority = task.priority ?? "want";
-                const fillColor = teamColorAt(team, row);
+                const priority = task.priority ?? "need";
+                const priorityClass =
+                  priority === "urgent"
+                    ? "task-priority-urgent"
+                    : priority === "want"
+                      ? "task-priority-want"
+                      : "task-priority-need";
+                const fillColor = teamColorAt(team, row, planner.colors);
 
                 return (
                   <DropdownMenu.Root
@@ -569,7 +609,7 @@ export function TimelineGrid({
                   >
                     <DropdownMenu.Trigger asChild>
                       <div
-                        className={`task-card task-priority-${priority} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""}`}
+                        className={`task-card ${priorityClass} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""}`}
                         draggable={!isRenaming}
                         onPointerDown={(ev) => {
                           ev.stopPropagation();

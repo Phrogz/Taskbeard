@@ -9,7 +9,8 @@ async function setupPlannerRoutes(page: Page) {
     },
     events: [],
     breaks: [],
-    teams: [{ id: "team-a", name: "Build", colors: [{ fg: "#111111", bg: "#99ccff" }] }],
+    teams: [{ id: "team-a", name: "Build", colors: "blues" }],
+    colors: { blues: ["#99ccff", "#7cb8ff", "#5a9eff"] },
     members: [],
     tasks: [
       {

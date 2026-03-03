@@ -83,7 +83,7 @@ Edits from UI write these files; manual edits are detected by the backend watche
 - `Teams` only is the lane board view with drag/drop and task context menus.
 - `Teams` + `People` keeps the same timeline styling as `Teams`, with extra member rows under each team main row.
 - `People` only shows all members alphabetically with assignment labels.
-- Task priority is normalized to `need`, `want`, or `nice` (aliases accepted by API).
+- Task priority is normalized to `urgent`, `need`, or `want` (aliases accepted by API).
 - Task context menu includes an `Assign To` submenu with non-dismissing assignment toggles.
 
 ## Team Colors

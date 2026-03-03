@@ -56,14 +56,18 @@ breaks:
 teams:
   - id: other
     name: Other
-    colors:
-      - fg: "#111827"
-        bg: "#f28a0c"
-      - fg: "#111827"
-        bg: "#f59e0b"
+    colors: yellows
   - id: electrical
     name: Electrical
-    color: "#ff00ff"
+    colors: purples
+```
+
+## colors.yaml
+```yaml
+colors:
+  greens: ["#cfff40", "#bff230", "#76b900", "#3f8500", "#265600"]
+  purples: ["#f9d4ff", "#c359ef", "#9525c6", "#741d9d", "#4d1368"]
+  blues: ["#cbf5ff", "#7cd7fe", "#0074df", "#0046a4", "#002781"]
 ```
 
 ## members.yaml
@@ -84,14 +88,15 @@ tasks:
     end_date: 2026-02-23
     est_hours: 1
     completed: false
-    priority: want
+    priority: need
     depends_on: []
     assigned_to: [andy]
 ```
 
 ## Notes
 - Cross-team tasks are represented by multiple `teams` on a single task.
-- Team visual colors are ordered under `colors` with `{fg,bg}` objects.
-- Task `priority` is canonicalized as one of `need`, `want`, or `nice`.
+- Teams reference a palette name with `colors: <palette-key>`.
+- Background colors come from `colors.yaml`; text color is inferred automatically for contrast.
+- Task `priority` is canonicalized as one of `urgent`, `need`, or `want`.
 - Dependencies are warnings only.
 - Backend derives `past` and `is_today` flags for dates.

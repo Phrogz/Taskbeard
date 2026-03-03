@@ -11,7 +11,7 @@
 - `YamlStore` enforces an allowlist (`FILE_KEYS`) and root schema type (`ROOT_KEY_TYPES`) in `backend/app/services/yaml_store.py`.
 - If you add a new config YAML, update both `FILE_KEYS` and `ROOT_KEY_TYPES` or writes/reads will fail.
 - Task APIs normalize polymorphic fields (`teams`, `depends_on`, `assigned_to`) to `string[]` internally and serialize back as `null|string|string[]` (`backend/app/api/tasks.py`).
-- Priority aliases are canonicalized to `need|want|nice` in both API and planner service; keep this behavior consistent.
+- Priority aliases are canonicalized to `urgent|need|want` in both API and planner service; keep this behavior consistent.
 
 ## Backend Patterns
 - Any endpoint that mutates YAML should publish a broker event (`{"type":"file_changed", ...}`) so connected clients refresh.

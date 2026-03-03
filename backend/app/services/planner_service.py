@@ -36,11 +36,13 @@ def _normalize_id_list(value: Any) -> list[str]:
 
 def _normalize_priority(value: Any) -> str:
     raw = str(value).strip().lower() if value is not None else ""
-    if raw in {1, "1", "high", "need"}:
+    if raw in {1, "1", "high", "urgent"}:
+        return "urgent"
+    if raw in {2, "2", "med", "medium", "need"}:
         return "need"
-    if raw in {3, "3", "low", "nice"}:
-        return "nice"
-    return "want"
+    if raw in {3, "3", "low", "want"}:
+        return "want"
+    return "need"
 
 
 @dataclass
@@ -53,6 +55,7 @@ class PlannerService:
         events_file = self.store.read("events.yaml")
         breaks_file = self.store.read("breaks.yaml")
         teams_file = self.store.read("teams.yaml")
+        colors_file = self.store.read("colors.yaml")
         members_file = self.store.read("members.yaml")
         tasks_file = self.store.read("tasks.yaml")
 
@@ -66,6 +69,7 @@ class PlannerService:
             "events": events_file.get("events", []),
             "breaks": breaks_file.get("breaks", []),
             "teams": teams_file.get("teams", []),
+            "colors": colors_file.get("colors", {}),
             "members": members,
             "tasks": tasks,
             "dates": self._build_dates(season),

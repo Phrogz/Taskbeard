@@ -14,6 +14,7 @@ FILE_KEYS: dict[str, str] = {
     "events.yaml": "events",
     "breaks.yaml": "breaks",
     "teams.yaml": "teams",
+    "colors.yaml": "colors",
     "members.yaml": "members",
     "tasks.yaml": "tasks",
 }
@@ -24,6 +25,7 @@ ROOT_KEY_TYPES: dict[str, type] = {
     "events": list,
     "breaks": list,
     "teams": list,
+    "colors": dict,
     "members": list,
     "tasks": list,
 }

@@ -13,7 +13,7 @@ const task: TaskItem = {
   depends_on: [],
   assigned_to: [],
   completed: false,
-  priority: "want"
+  priority: "need"
 };
 
 const planner: PlannerPayload = {
@@ -28,9 +28,12 @@ const planner: PlannerPayload = {
     {
       id: "team-a",
       name: "Build",
-      colors: [{ fg: "#111111", bg: "#99ccff" }]
+      colors: "blues"
     }
   ],
+  colors: {
+    blues: ["#99ccff", "#7cb8ff", "#5a9eff"]
+  },
   members: [],
   tasks: [task],
   dates: [
@@ -42,7 +45,10 @@ const planner: PlannerPayload = {
   student_task_map: {}
 };
 
-function renderGrid(overrides: Partial<ComponentProps<typeof TimelineGrid>> = {}) {
+function renderGrid(
+  overrides: Partial<ComponentProps<typeof TimelineGrid>> = {},
+  plannerOverride: PlannerPayload = planner
+) {
   const handlers = {
     onMoveTask: vi.fn(),
     onResizeTask: vi.fn(),
@@ -61,7 +67,7 @@ function renderGrid(overrides: Partial<ComponentProps<typeof TimelineGrid>> = {}
 
   const view = render(
     <TimelineGrid
-      planner={planner}
+      planner={plannerOverride}
       selectedTaskPlacement={null}
       renamingTaskId={null}
       renameDraft=""
@@ -69,7 +75,9 @@ function renderGrid(overrides: Partial<ComponentProps<typeof TimelineGrid>> = {}
     />
   );
 
-  const taskCard = screen.getByText("Build bot").closest(".task-card") as HTMLDivElement | null;
+  const taskCard =
+    (screen.queryByText("Build bot")?.closest(".task-card") as HTMLDivElement | null) ??
+    (view.container.querySelector(".task-card") as HTMLDivElement | null);
   if (!taskCard) {
     throw new Error("Expected task card to be rendered");
   }
@@ -169,5 +177,84 @@ describe("TimelineGrid drag interactions", () => {
       expect(handlers.onSelectTask).not.toHaveBeenCalled();
       expect(screen.queryByText("Complete")).not.toBeInTheDocument();
     });
+  });
+
+  it("allows dropping onto a break day", () => {
+    const plannerWithBreak: PlannerPayload = {
+      ...planner,
+      breaks: [
+        {
+          id: "break-1",
+          name: "Spring Break",
+          start_date: "2026-03-03",
+          end_date: "2026-03-03",
+        },
+      ],
+    };
+    const { container, taskCard, handlers } = renderGrid({}, plannerWithBreak);
+    const dataTransfer = mockDataTransfer();
+    const dayCells = container.querySelectorAll(".lane-day");
+    const targetDay = dayCells[2] as HTMLDivElement | undefined;
+    if (!targetDay) {
+      throw new Error("Expected target lane day to exist");
+    }
+
+    fireEvent.dragStart(taskCard, { dataTransfer, altKey: false });
+    fireEvent.dragOver(targetDay, { dataTransfer, altKey: false });
+    fireEvent.drop(targetDay, { dataTransfer, altKey: false });
+
+    expect(handlers.onMoveTask).toHaveBeenCalledWith(task, "2026-03-03", "team-a", "team-a", false);
+  });
+
+  it("applies priority classes for urgent/need/want", () => {
+    const plannerPriorities: PlannerPayload = {
+      ...planner,
+      tasks: [
+        { ...task, id: "urgent-1", title: "Urgent", priority: "urgent" },
+        { ...task, id: "need-1", title: "Need", priority: "need", start_date: "2026-03-02", end_date: "2026-03-02" },
+        { ...task, id: "want-1", title: "Want", priority: "want", start_date: "2026-03-03", end_date: "2026-03-03" },
+      ],
+    };
+
+    renderGrid({}, plannerPriorities);
+
+    expect(screen.getByText("Urgent").closest(".task-card")).toHaveClass("task-priority-urgent");
+    expect(screen.getByText("Need").closest(".task-card")).toHaveClass("task-priority-need");
+    expect(screen.getByText("Want").closest(".task-card")).toHaveClass("task-priority-want");
+  });
+
+  it("shows practice-hours tooltip on normal days and override label on override days", () => {
+    const plannerWithOverride: PlannerPayload = {
+      ...planner,
+      practices: {
+        default_hours_per_day: { sun: 0, mon: 3, tue: 4, wed: 0, thu: 0, fri: 0, sat: 0 },
+        overrides: [{ date: "2026-03-02", hours: 0, label: "No Practice" }],
+      },
+    };
+
+    const { container } = renderGrid({}, plannerWithOverride);
+    const dayCells = container.querySelectorAll(".timeline-header .day-cell");
+    const sunday = dayCells[0] as HTMLDivElement | undefined;
+    const monday = dayCells[1] as HTMLDivElement | undefined;
+    if (!sunday || !monday) {
+      throw new Error("Expected day cells to exist");
+    }
+
+    expect(sunday.getAttribute("title")).toBe("2026-03-01: 0h practice");
+    expect(monday.getAttribute("title")).toBe("No Practice");
+    expect(monday).toHaveClass("override");
+  });
+
+  it("uses the same explicit grid-template columns for header and lane grids", () => {
+    const { container } = renderGrid();
+    const header = container.querySelector(".timeline-header") as HTMLDivElement | null;
+    const laneGrid = container.querySelector(".lane-grid") as HTMLDivElement | null;
+
+    if (!header || !laneGrid) {
+      throw new Error("Expected timeline header and lane grid");
+    }
+
+    expect(header.style.gridTemplateColumns).toBe("repeat(3, 35px)");
+    expect(laneGrid.style.gridTemplateColumns).toBe("repeat(3, 35px)");
   });
 });
