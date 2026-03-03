@@ -1,45 +1,92 @@
 import { useMemo, useState } from "react";
+import { dump, load } from "js-yaml";
 import type { PlannerPayload } from "../services/plannerApi";
-import { putConfig, putTasks } from "../services/plannerApi";
+import { putConfigYaml } from "../services/plannerApi";
 
 type Props = {
   planner: PlannerPayload;
   onSaved: () => void;
 };
 
+type ConfigKey = "season" | "practices" | "events" | "breaks" | "teams" | "members" | "tasks";
+
+type ConfigDoc = {
+  key: ConfigKey;
+  title: string;
+};
+
+const CONFIG_DOCS: ConfigDoc[] = [
+  { key: "season", title: "Season" },
+  { key: "practices", title: "Practices + Overrides" },
+  { key: "events", title: "Events + Travel" },
+  { key: "breaks", title: "Breaks" },
+  { key: "teams", title: "Teams + Colors" },
+  { key: "members", title: "Members + Team Membership" },
+  { key: "tasks", title: "Tasks" },
+];
+
+function toYamlText(payload: unknown): string {
+  return dump(payload, { sortKeys: false, lineWidth: 120 });
+}
+
+function syntaxCheck(name: ConfigKey, text: string): void {
+  try {
+    load(text);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid YAML syntax";
+    throw new Error(`${name}.yaml syntax error: ${message}`);
+  }
+}
+
 export function ConfigPage({ planner, onSaved }: Props) {
-  const [seasonText, setSeasonText] = useState(
-    JSON.stringify({ season: planner.season }, null, 2)
-  );
-  const [practiceText, setPracticeText] = useState(JSON.stringify(planner.practices, null, 2));
-  const [tournamentText, setTournamentText] = useState(
-    JSON.stringify({ events: planner.events }, null, 2)
-  );
-  const [breaksText, setBreaksText] = useState(JSON.stringify({ breaks: planner.breaks }, null, 2));
-  const [teamsText, setTeamsText] = useState(JSON.stringify({ teams: planner.teams }, null, 2));
-  const [membersText, setMembersText] = useState(
-    JSON.stringify({ members: planner.members }, null, 2)
-  );
-  const [tasksText, setTasksText] = useState(JSON.stringify({ tasks: planner.tasks }, null, 2));
+  const [documents, setDocuments] = useState<Record<ConfigKey, string>>({
+    season: toYamlText({ season: planner.season }),
+    practices: toYamlText(planner.practices),
+    events: toYamlText({ events: planner.events }),
+    breaks: toYamlText({ breaks: planner.breaks }),
+    teams: toYamlText({ teams: planner.teams }),
+    members: toYamlText({ members: planner.members }),
+    tasks: toYamlText({ tasks: planner.tasks }),
+  });
+  const [fileWarnings, setFileWarnings] = useState<Partial<Record<ConfigKey, string>>>({});
   const [status, setStatus] = useState("");
 
   const rows = useMemo(() => 12, []);
 
-  const saveAll = async () => {
-    setStatus("Saving...");
+  const updateOne = async (key: ConfigKey): Promise<boolean> => {
+    const yamlText = documents[key] ?? "";
     try {
-      await putConfig("season", JSON.parse(seasonText));
-      await putConfig("practices", JSON.parse(practiceText));
-      await putConfig("events", JSON.parse(tournamentText));
-      await putConfig("breaks", JSON.parse(breaksText));
-      await putConfig("teams", JSON.parse(teamsText));
-      await putConfig("members", JSON.parse(membersText));
-      await putTasks(JSON.parse(tasksText));
-      setStatus("Saved");
-      onSaved();
+      syntaxCheck(key, yamlText);
+      await putConfigYaml(key, yamlText);
+      setFileWarnings((current) => ({ ...current, [key]: "" }));
+      return true;
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Save failed");
+      const message = error instanceof Error ? error.message : "Update failed";
+      setFileWarnings((current) => ({ ...current, [key]: message }));
+      return false;
     }
+  };
+
+  const updateAll = async () => {
+    setStatus("Updating...");
+    const failures: string[] = [];
+    let updated = 0;
+
+    for (const doc of CONFIG_DOCS) {
+      const ok = await updateOne(doc.key);
+      if (ok) {
+        updated += 1;
+      } else {
+        failures.push(doc.key);
+      }
+    }
+
+    if (failures.length > 0) {
+      setStatus(`Updated ${updated}/${CONFIG_DOCS.length}; failed: ${failures.join(", ")}`);
+    } else {
+      setStatus(`Updated ${updated}/${CONFIG_DOCS.length}`);
+    }
+    onSaved();
   };
 
   return (
@@ -49,50 +96,39 @@ export function ConfigPage({ planner, onSaved }: Props) {
         updates as well.
       </p>
       <div className="editor-grid">
-        <section>
-          <h3>Season</h3>
-          <textarea value={seasonText} onChange={(e) => setSeasonText(e.target.value)} rows={rows} />
-        </section>
-        <section>
-          <h3>Practices + Overrides</h3>
-          <textarea
-            value={practiceText}
-            onChange={(e) => setPracticeText(e.target.value)}
-            rows={rows}
-          />
-        </section>
-        <section>
-          <h3>Events + Travel</h3>
-          <textarea
-            value={tournamentText}
-            onChange={(e) => setTournamentText(e.target.value)}
-            rows={rows}
-          />
-        </section>
-        <section>
-          <h3>Breaks</h3>
-          <textarea value={breaksText} onChange={(e) => setBreaksText(e.target.value)} rows={rows} />
-        </section>
-        <section>
-          <h3>Teams + Colors</h3>
-          <textarea value={teamsText} onChange={(e) => setTeamsText(e.target.value)} rows={rows} />
-        </section>
-        <section>
-          <h3>Members + Team Membership</h3>
-          <textarea
-            value={membersText}
-            onChange={(e) => setMembersText(e.target.value)}
-            rows={rows}
-          />
-        </section>
-        <section>
-          <h3>Tasks</h3>
-          <textarea value={tasksText} onChange={(e) => setTasksText(e.target.value)} rows={rows} />
-        </section>
+        {CONFIG_DOCS.map((doc) => (
+          <section key={doc.key} className="config-section">
+            <div className="config-section-head">
+              <h3>{doc.title}</h3>
+              <button
+                onClick={async () => {
+                  setStatus(`Updating ${doc.key}.yaml...`);
+                  const ok = await updateOne(doc.key);
+                  if (ok) {
+                    setStatus(`Updated ${doc.key}.yaml`);
+                    onSaved();
+                  } else {
+                    setStatus(`Failed to update ${doc.key}.yaml`);
+                  }
+                }}
+              >
+                Update
+              </button>
+            </div>
+            <textarea
+              value={documents[doc.key]}
+              onChange={(event) =>
+                setDocuments((current) => ({ ...current, [doc.key]: event.target.value }))
+              }
+              rows={rows}
+            />
+            {fileWarnings[doc.key] && <div className="warning-item">{fileWarnings[doc.key]}</div>}
+          </section>
+        ))}
       </div>
 
       <div className="config-actions">
-        <button onClick={saveAll}>Save All</button>
+        <button onClick={updateAll}>Update All</button>
         <span className="muted">{status}</span>
       </div>
     </div>

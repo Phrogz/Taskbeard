@@ -1,0 +1,55 @@
+teams:
+  - id: cad
+    name: CAD
+    colors:
+      - fg: "#111827"
+        bg: "#76b900"
+      - fg: "#111827"
+        bg: "#8fcb2e"
+      - fg: "#111827"
+        bg: "#5d9400"
+  - id: build
+    name: Build
+    colors:
+      - fg: "#ffffff"
+        bg: "#2563eb"
+      - fg: "#ffffff"
+        bg: "#3b82f6"
+      - fg: "#ffffff"
+        bg: "#1d4ed8"
+  - id: electrical
+    name: Electrical
+    colors:
+      - fg: "#111827"
+        bg: "#ff00ff"
+      - fg: "#111827"
+        bg: "#ff4dff"
+      - fg: "#ffffff"
+        bg: "#cc00cc"
+  - id: code
+    name: Code
+    colors:
+      - fg: "#ffffff"
+        bg: "#4c1d95"
+      - fg: "#ffffff"
+        bg: "#5b21b6"
+      - fg: "#ffffff"
+        bg: "#3b146f"
+  - id: business
+    name: Business
+    colors:
+      - fg: "#ffffff"
+        bg: "#db2777"
+      - fg: "#ffffff"
+        bg: "#ec4899"
+      - fg: "#ffffff"
+        bg: "#be185d"
+  - id: admin
+    name: Admin
+    colors:
+      - fg: "#111827"
+        bg: "#f28a0c"
+      - fg: "#111827"
+        bg: "#f59e0b"
+      - fg: "#111827"
+        bg: "#d97706"

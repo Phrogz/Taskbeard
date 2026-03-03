@@ -12,7 +12,24 @@
 - [x] Script logic from `taskmanagement/*.py` consolidated into root `main.py`; `pyproject.toml` scripts now point to Click-based commands.
 - [x] AI-facing and human-facing docs updated; checklist retained here for resumable tracking.
 
-- [ ] Put `logo.svg` in the top-left of the grid.
-- [ ] Task context menu should include an `Assign To` submenu listing every member with checkmarks for current assignments; clicking a member toggles assignment without dismissing menu/submenu; Esc or outside click dismisses. List members assigned to the task's team(s) first (alphabetically), then a separator, then all other members.
-- [ ] Make `Team` view look just like `Tasks` view, with the same main task row plus extra member rows.
-- [ ] Replace team `color` with ordered `colors` array of `{ fg, bg }` objects; first color is default task color, subsequent colors handle same-day overlap; derive variations with same hue (different saturation/value) and choose black/white `fg` for contrast.
+- [x] Put `logo.svg` in the top-left of the grid.
+- [x] Task context menu should include an `Assign To` submenu listing every member with checkmarks for current assignments; clicking a member toggles assignment without dismissing menu/submenu; Esc or outside click dismisses. List members assigned to the task's team(s) first (alphabetically), then a separator, then all other members.
+- [x] Make `Team` view look just like `Tasks` view, with the same main task row plus extra member rows (superseded by unified `Teams`/`People` board aspects).
+- [x] Replace team `color` with ordered `colors` array of `{ fg, bg }` objects; first color is default task color, subsequent colors handle same-day overlap; derive variations with same hue (different saturation/value) and choose black/white `fg` for contrast.
+- [x] Fix bug: dragging a task should not show the context menu; only a click without movement opens context.
+- [x] Replace separate `Tasks`/`Team` views with toggleable `Teams` and `People` aspects in the same board view.
+- [x] `Teams` only: show tasks per team (current `Tasks` behavior).
+- [x] `Teams` + `People`: show members per team with assignment color only (current `Team` structure without task name labels in fills).
+- [x] `People` only: show all team members alphabetically with assignments including task names.
+- [x] Remove the standalone members list panel.
+- [x] Retitle the warnings pane to exactly `Warnings`.
+- [x] Move all files from `data/config/*` to `data/*` and remove the `config` directory.
+- [x] Make the `Config` page edit YAML instead of JSON.
+- [x] Add per-file `Update` buttons for YAML config files.
+- [x] `Update`/`Update All` must validate YAML syntax first, then backend semantic validity, show detailed warnings on failure, and overwrite file only on success.
+- [x] Rename `Save All` to `Update All`.
+- [ ] Need a way for an admin to easily bulk-add tasks for a team. Thinking there's a new view ("Task List") that has a table per team listing the task name, priority, est hours only, with a blank row at the end, and typing in that blank row immediately adds a new blank row below it. Quick type/tab/type/tab enter to add many tasks. Indeed, I need to test this for all the code tasks.
+- [ ] Low-opacity for all day names/numbers that are in the past.
+- [ ] Ensure tasks can overlap breaks.
+- [ ] Hovering a day should show how many hours of practice time there are.
+- [ ] Days that have overrides should somehow be visually differentiated, with a tooltip showing the override details. (Both cancelling a practice, or extending a practice.)

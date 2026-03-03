@@ -44,6 +44,7 @@ body {
   margin-top: 1rem;
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .tabs button,
@@ -59,6 +60,31 @@ body {
 .tabs button.active {
   background: #0f766e;
   border-color: #14b8a6;
+}
+
+.tabs-segmented {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #374151;
+  border-radius: 0.45rem;
+  overflow: hidden;
+  background: #1f2937;
+}
+
+.tabs-segmented button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.tabs-segmented button.active {
+  background: #0f766e;
+  border-color: transparent;
+}
+
+.tabs-separator {
+  width: 1px;
+  background: #374151;
 }
 
 .board-page {
@@ -82,8 +108,27 @@ body {
   grid-auto-columns: 35.2px;
 }
 
+.timeline-top-row {
+  display: flex;
+}
+
+.timeline-corner {
+  width: 170px;
+  border-bottom: 1px solid #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111827;
+}
+
+.board-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
 .timeline-header-wrap {
-  margin-left: 170px;
+  margin-left: 0;
   margin-bottom: 0.5rem;
 }
 
@@ -339,6 +384,12 @@ body {
   color: #fca5a5;
 }
 
+.task-menu-separator {
+  height: 1px;
+  background: #334155;
+  margin: 0.2rem 0.15rem;
+}
+
 .task-card span {
   font-family: "Roboto Condensed", "Roboto", system-ui, sans-serif;
   width: 100%;
@@ -356,83 +407,24 @@ body {
 
 .task-title-input {
   width: 100%;
-  border: 1px solid rgba(15, 23, 42, 0.7);
-  border-radius: 0.2rem;
-  background: rgba(248, 250, 252, 0.94);
-  color: #020617;
-  font-family: "Roboto Condensed", "Roboto", system-ui, sans-serif;
-  font-size: 0.72rem;
-  line-height: 1.1;
-  padding: 0.05rem 0.2rem;
-}
-
-.board-wrap {
-  font-family: "Bebas Neue", "Arial Narrow", Arial, sans-serif;
-}
-
-.task-card.completed {
-  opacity: 0.3;
-}
-
-.board-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.student-panel,
-.warnings,
-.config-page,
-.status {
   border: 1px solid #374151;
   border-radius: 0.5rem;
   background: #0b1220;
+  color: #e5e7eb;
+  font-family: "Roboto Condensed", "Roboto", system-ui, sans-serif;
+  font-size: 0.72rem;
+  line-height: 1.1;
   padding: 0.7rem;
+  margin: 0;
 }
 
-.student-panel h3,
-.warnings h3 {
-  margin: 0 0 0.6rem 0;
-}
-
-.student-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-height: 420px;
-  overflow: auto;
-}
-
-.student-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-}
-
-.student-teams,
-.muted {
-  color: #94a3b8;
-}
-
-.warning-item {
-  font-size: 0.8rem;
-  margin-bottom: 0.35rem;
-  color: #fca5a5;
-}
-
-.config-page {
-  margin-top: 1rem;
-}
-
-.editor-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(300px, 1fr));
-  gap: 0.8rem;
-}
-
-.editor-grid h3 {
-  margin: 0 0 0.35rem 0;
+.config-section-head button {
+  background: #1f2937;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  border-radius: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
 }
 
 .editor-grid textarea {
@@ -453,99 +445,22 @@ body {
 }
 
 .team-page {
-  margin-top: 1rem;
-  border: 1px solid #374151;
-  border-radius: 0.5rem;
-  background: #0b1220;
-  padding: 0.6rem;
-  overflow: auto;
-}
-
-.team-header-wrap {
-  margin-left: 170px;
-  margin-bottom: 0.5rem;
-}
-
-.team-months {
-  display: flex;
-  margin-bottom: 0.2rem;
-}
-
-.team-days {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 35.2px;
-}
-
-.team-day-cell {
-  border-right: 1px solid #1f2937;
-  padding: 0.15rem;
-  font-size: 0.75rem;
-  text-align: center;
-  color: #9ca3af;
-}
-
-.team-day-num {
-  color: #e5e7eb;
-  font-weight: 700;
+  margin-top: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  overflow: visible;
 }
 
 .team-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
 }
 
-.team-group-label {
-  width: 170px;
-  background: #111827;
-  border-left: 8px solid #6b7280;
-  border-bottom: 1px solid #1f2937;
-  display: flex;
-  align-items: center;
-  padding: 0.35rem 0.55rem;
-  font-weight: 700;
-  font-size: 1.06rem;
-}
-
-.team-member-row {
-  display: flex;
-}
-
-.team-member-name {
-  width: 170px;
-  flex-shrink: 0;
-  border-left: 8px solid transparent;
-  border-bottom: 1px solid #1f2937;
-  padding: 0.3rem 0.55rem;
-  color: #cbd5e1;
-  font-size: 0.85rem;
+.lane-label-member {
   background: #0f172a;
-}
-
-.team-member-grid {
-  position: relative;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 35.2px;
-  min-height: 30px;
-}
-
-.team-member-day {
-  border-right: 1px solid #1f2937;
-  border-bottom: 1px solid #1f2937;
-  min-height: 30px;
-}
-
-.team-task-fill {
-  position: absolute;
-  top: 3px;
-  min-height: 24px;
-  border-radius: 0.3rem;
-  color: #020617;
-  font-size: 0.72rem;
-  padding: 0.15rem 0.28rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  font-size: 0.9rem;
+  color: #cbd5e1;
 }

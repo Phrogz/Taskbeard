@@ -1,0 +1,3 @@
+- [ ] Numbers in Board grid no longer line up with columns below.
+- [ ] Cannot drag tasks horizontally or laterally; they don't move.
+- [ ] Every task seems to be showing up in italics. Italics should be the lowest priority, and bold for the highest, and normal for the middle.

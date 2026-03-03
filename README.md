@@ -71,15 +71,21 @@ uv run pytest
 
 ## Data Files
 All persisted state is YAML under `data/`:
-- `data/config/*.yaml`
+- `data/*.yaml`
 - `data/tasks.yaml`
 
-Notable config files include `data/config/members.yaml` and `data/config/teams.yaml`.
+Notable config files include `data/members.yaml` and `data/teams.yaml`.
 
 Edits from UI write these files; manual edits are detected by the backend watcher and pushed to connected clients.
 
 ## UI Notes
-- Top navigation includes `Tasks`, `Team`, and `Config`.
-- `Tasks` is the lane board view with drag/drop and task context menus.
-- `Team` shows team groupings with member sub-rows and colored assignment bars.
+- Top navigation includes `Teams`, `People`, and `Config` (`Teams`/`People` are toggleable aspects).
+- `Teams` only is the lane board view with drag/drop and task context menus.
+- `Teams` + `People` keeps the same timeline styling as `Teams`, with extra member rows under each team main row.
+- `People` only shows all members alphabetically with assignment labels.
 - Task priority is normalized to `need`, `want`, or `nice` (aliases accepted by API).
+- Task context menu includes an `Assign To` submenu with non-dismissing assignment toggles.
+
+## Team Colors
+- Team YAML uses an ordered `colors` array of `{ fg, bg }` objects.
+- The first color entry is the default; overlapping rows rotate through additional entries.

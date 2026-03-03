@@ -1,7 +1,8 @@
 export type Team = {
   id: string;
   name: string;
-  color: string;
+  colors: Array<{ fg: string; bg: string }>;
+  color?: string;
 };
 
 export type Student = {
@@ -59,6 +60,15 @@ export async function putConfig(name: string, payload: unknown): Promise<void> {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error(await response.text());
+}
+
+export async function putConfigYaml(name: string, yamlText: string): Promise<void> {
+  const response = await fetch(`/api/config/${name}/yaml`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ yaml_text: yamlText })
   });
   if (!response.ok) throw new Error(await response.text());
 }

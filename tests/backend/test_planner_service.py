@@ -16,7 +16,7 @@ def _write_yaml(root, relative_path: str, payload: dict) -> None:
 def test_planner_prefers_members_and_normalizes_task_lists(tmp_path):
     _write_yaml(
         tmp_path,
-        "config/members.yaml",
+        "members.yaml",
         {
             "members": [
                 {"id": "m1", "name": "Member One", "teams": "build"},

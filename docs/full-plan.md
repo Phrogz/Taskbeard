@@ -55,12 +55,12 @@ Build a web app that resembles the seasonal robotics planning sheet and supports
 
 ## YAML Storage Layout
 
-- `data/config/season.yaml`
-- `data/config/practices.yaml`
-- `data/config/events.yaml`
-- `data/config/teams.yaml`
-- `data/config/members.yaml`
-- `data/config/breaks.yaml`
+- `data/season.yaml`
+- `data/practices.yaml`
+- `data/events.yaml`
+- `data/teams.yaml`
+- `data/members.yaml`
+- `data/breaks.yaml`
 - `data/tasks.yaml`
 
 All UI edits write back to these files. Any external edit to these files triggers a backend watcher event and frontend refresh.

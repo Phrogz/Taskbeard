@@ -56,7 +56,11 @@ breaks:
 teams:
   - id: other
     name: Other
-    color: "#f28a0c"
+    colors:
+      - fg: "#111827"
+        bg: "#f28a0c"
+      - fg: "#111827"
+        bg: "#f59e0b"
   - id: electrical
     name: Electrical
     color: "#ff00ff"
@@ -87,6 +91,7 @@ tasks:
 
 ## Notes
 - Cross-team tasks are represented by multiple `teams` on a single task.
+- Team visual colors are ordered under `colors` with `{fg,bg}` objects.
 - Task `priority` is canonicalized as one of `need`, `want`, or `nice`.
 - Dependencies are warnings only.
 - Backend derives `past` and `is_today` flags for dates.

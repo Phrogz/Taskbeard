@@ -189,7 +189,7 @@ async def schedule_task(task_id: str, payload: dict, request: Request):
 
     store = request.app.state.store
     tasks = _read_normalized_tasks(store)
-    practices = store.read("config/practices.yaml")
+    practices = store.read("practices.yaml")
 
     for task in tasks:
         if task.get("id") != task_id:

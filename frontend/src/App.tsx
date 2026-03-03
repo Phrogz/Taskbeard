@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BoardPage } from "./pages/BoardPage";
 import { ConfigPage } from "./pages/ConfigPage";
-import { TeamPage } from "./pages/TeamPage";
 import {
   getPlanner,
   subscribePlannerUpdates,
@@ -10,7 +9,7 @@ import {
   type TaskItem
 } from "./services/plannerApi";
 
-type Tab = "tasks" | "team" | "config";
+type Tab = "tasks" | "config";
 
 type SelectedTaskPlacement = {
   taskId: string;
@@ -20,6 +19,8 @@ type SelectedTaskPlacement = {
 export function App() {
   const [planner, setPlanner] = useState<PlannerPayload | null>(null);
   const [tab, setTab] = useState<Tab>("tasks");
+  const [showTeams, setShowTeams] = useState(true);
+  const [showPeople, setShowPeople] = useState(false);
   const [status, setStatus] = useState("Loading...");
   const [autoSpan, setAutoSpan] = useState(true);
   const [selectedTaskPlacement, setSelectedTaskPlacement] = useState<SelectedTaskPlacement | null>(null);
@@ -262,6 +263,25 @@ export function App() {
     await saveTasks(nextTasks);
   };
 
+  const onToggleTaskAssignee = async (task: TaskItem, memberId: string) => {
+    if (!planner) return;
+    const nextTasks = cloneTasks(planner.tasks);
+    const index = nextTasks.findIndex((item) => item.id === task.id);
+    if (index === -1) return;
+
+    const currentAssignees = nextTasks[index].assigned_to ?? [];
+    const exists = currentAssignees.includes(memberId);
+    const assigned_to = exists
+      ? currentAssignees.filter((item) => item !== memberId)
+      : [...currentAssignees, memberId];
+
+    nextTasks[index] = {
+      ...nextTasks[index],
+      assigned_to
+    };
+    await saveTasks(nextTasks);
+  };
+
   const onDeleteTask = async (task: TaskItem, teamId: string) => {
     if (!planner) return;
     const nextTasks = cloneTasks(planner.tasks);
@@ -361,6 +381,26 @@ export function App() {
     return <div className="app-shell">{status}</div>;
   }
 
+  const toggleTeams = () => {
+    if (showTeams && !showPeople) {
+      setShowTeams(false);
+      setShowPeople(true);
+      return;
+    }
+    setShowTeams((value) => !value);
+    setTab("tasks");
+  };
+
+  const togglePeople = () => {
+    if (showPeople && !showTeams) {
+      setShowPeople(false);
+      setShowTeams(true);
+      return;
+    }
+    setShowPeople((value) => !value);
+    setTab("tasks");
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -379,12 +419,15 @@ export function App() {
       </header>
 
       <nav className="tabs">
-        <button className={tab === "tasks" ? "active" : ""} onClick={() => setTab("tasks")}>
-          Tasks
-        </button>
-        <button className={tab === "team" ? "active" : ""} onClick={() => setTab("team")}>
-          Team
-        </button>
+        <div className="tabs-segmented" role="group" aria-label="Task views">
+          <button className={tab === "tasks" && showTeams ? "active" : ""} onClick={toggleTeams}>
+            Teams
+          </button>
+          <span className="tabs-separator" aria-hidden="true" />
+          <button className={tab === "tasks" && showPeople ? "active" : ""} onClick={togglePeople}>
+            People
+          </button>
+        </div>
         <button className={tab === "config" ? "active" : ""} onClick={() => setTab("config")}>
           Config
         </button>
@@ -396,6 +439,7 @@ export function App() {
           onMoveTask={onMoveTask}
           onResizeTask={onResizeTask}
           onToggleTaskComplete={onToggleTaskComplete}
+          onToggleTaskAssignee={onToggleTaskAssignee}
           onDeleteTask={onDeleteTask}
           selectedTaskPlacement={selectedTaskPlacement}
           renamingTaskId={renamingTaskId}
@@ -412,14 +456,11 @@ export function App() {
           onCancelRename={onCancelRename}
           onCreateTaskAt={onCreateTaskAt}
         />
-      ) : tab === "team" ? (
-        <TeamPage planner={planner} />
       ) : (
         <ConfigPage
           planner={planner}
           onSaved={() => {
             void refresh();
-            setTab("tasks");
           }}
         />
       )}

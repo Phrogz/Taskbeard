@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { PlannerPayload, TaskItem } from "../services/plannerApi";
+import { teamColorAt, teamDefaultColor } from "../services/teamColors";
+
+const logo = new URL("../logo.svg", import.meta.url).href;
 
 type SelectedTaskPlacement = {
   taskId: string;
@@ -18,6 +21,7 @@ type Props = {
   ) => void;
   onResizeTask: (task: TaskItem, startDate: string, endDate: string, estHours: number) => void;
   onToggleTaskComplete: (task: TaskItem) => void;
+  onToggleTaskAssignee: (task: TaskItem, memberId: string) => void;
   onDeleteTask: (task: TaskItem, teamId: string) => void;
   selectedTaskPlacement: SelectedTaskPlacement | null;
   renamingTaskId: string | null;
@@ -92,6 +96,7 @@ export function TimelineGrid({
   onMoveTask,
   onResizeTask,
   onToggleTaskComplete,
+  onToggleTaskAssignee,
   onDeleteTask,
   selectedTaskPlacement,
   renamingTaskId,
@@ -116,8 +121,10 @@ export function TimelineGrid({
     originalEndOffset: number;
   } | null>(null);
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
+  const menuOpenRequestKeyRef = useRef<string | null>(null);
   const pointerStateRef = useRef<{ key: string; x: number; y: number; moved: boolean } | null>(null);
   const dragTaskKeyRef = useRef<string | null>(null);
+  const suppressClickUntilRef = useRef(0);
 
   const monthSpans = useMemo(() => {
     const spans: Array<{ key: string; label: string; spanDays: number }> = [];
@@ -308,7 +315,12 @@ export function TimelineGrid({
     ev.dataTransfer.setData("source_team_id", teamId);
     ev.dataTransfer.setData("copy_mode", copyMode ? "1" : "0");
     ev.dataTransfer.effectAllowed = "copyMove";
-    dragTaskKeyRef.current = `${teamId}:${taskId}`;
+    const taskKey = `${teamId}:${taskId}`;
+    dragTaskKeyRef.current = taskKey;
+    const pointer = pointerStateRef.current;
+    if (pointer?.key === taskKey) {
+      pointerStateRef.current = { ...pointer, moved: true };
+    }
     if (copyMode) {
       ev.dataTransfer.dropEffect = "copy";
     }
@@ -316,6 +328,8 @@ export function TimelineGrid({
 
   const onDragEnd = () => {
     dragTaskKeyRef.current = null;
+    suppressClickUntilRef.current = Date.now() + 200;
+    pointerStateRef.current = null;
   };
 
   const onDrop = (ev: React.DragEvent<HTMLDivElement>, date: string, targetTeamId: string) => {
@@ -424,29 +438,34 @@ export function TimelineGrid({
         setOpenMenuKey(null);
       }}
     >
-      <div className="timeline-header-wrap" style={{ width: totalWidth }}>
-        <div className="timeline-months">
-          {monthSpans.map((month) => (
-            <div
-              key={month.key}
-              className="month-cell"
-              style={{ width: month.spanDays * DAY_WIDTH }}
-            >
-              {month.label}
-            </div>
-          ))}
+      <div className="timeline-top-row">
+        <div className="timeline-corner">
+          <img src={logo} alt="Taskbeard logo" className="board-logo" />
         </div>
-        <div className="timeline-header" style={{ width: totalWidth }}>
-          {days.map((day) => (
-            <div
-              key={day.date}
-              className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
-              title={day.date}
-            >
-              <div>{day.weekday}</div>
-              <div className="day-num">{day.date.slice(8, 10)}</div>
-            </div>
-          ))}
+        <div className="timeline-header-wrap" style={{ width: totalWidth }}>
+          <div className="timeline-months">
+            {monthSpans.map((month) => (
+              <div
+                key={month.key}
+                className="month-cell"
+                style={{ width: month.spanDays * DAY_WIDTH }}
+              >
+                {month.label}
+              </div>
+            ))}
+          </div>
+          <div className="timeline-header" style={{ width: totalWidth }}>
+            {days.map((day) => (
+              <div
+                key={day.date}
+                className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                title={day.date}
+              >
+                <div>{day.weekday}</div>
+                <div className="day-num">{day.date.slice(8, 10)}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -494,7 +513,10 @@ export function TimelineGrid({
 
         {laneData.map(({ team, positionedTasks, laneHeight }) => (
           <div key={team.id} className="lane-row">
-            <div className="lane-label" style={{ borderLeftColor: team.color, minHeight: laneHeight }}>
+            <div
+              className="lane-label"
+              style={{ borderLeftColor: teamDefaultColor(team).bg, minHeight: laneHeight }}
+            >
               {team.name}
             </div>
             <div className="lane-grid" style={{ width: totalWidth, minHeight: laneHeight }}>
@@ -518,23 +540,55 @@ export function TimelineGrid({
                   .map((studentId) => planner.members.find((member) => member.id === studentId)?.name)
                   .filter((value): value is string => Boolean(value))
                   .sort((left, right) => left.localeCompare(right));
+                const inTaskTeamMembers = planner.members
+                  .filter((member) => member.teams.some((teamId) => task.teams.includes(teamId)))
+                  .sort((left, right) => left.name.localeCompare(right.name));
+                const inTaskTeamIds = new Set(inTaskTeamMembers.map((member) => member.id));
+                const otherMembers = planner.members
+                  .filter((member) => !inTaskTeamIds.has(member.id))
+                  .sort((left, right) => left.name.localeCompare(right.name));
                 const priority = task.priority ?? "want";
+                const fillColor = teamColorAt(team, row);
 
                 return (
                   <DropdownMenu.Root
                     key={`${team.id}-${task.id}`}
                     modal={false}
                     open={openMenuKey === taskKey && !isRenaming}
-                    onOpenChange={(nextOpen) => setOpenMenuKey(nextOpen ? taskKey : null)}
+                    onOpenChange={(nextOpen) => {
+                      if (nextOpen) {
+                        if (menuOpenRequestKeyRef.current === taskKey) {
+                          setOpenMenuKey(taskKey);
+                        }
+                        menuOpenRequestKeyRef.current = null;
+                        return;
+                      }
+                      menuOpenRequestKeyRef.current = null;
+                      setOpenMenuKey(null);
+                    }}
                   >
                     <DropdownMenu.Trigger asChild>
                       <div
                         className={`task-card task-priority-${priority} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""}`}
                         draggable={!isRenaming}
+                        onPointerDown={(ev) => {
+                          ev.stopPropagation();
+                        }}
                         onDragStart={(ev) => onDragStart(ev, task.id, team.id)}
                         onDragEnd={onDragEnd}
                         onMouseDown={(ev) => {
                           ev.stopPropagation();
+                          if (ev.button === 2) {
+                            onSelectTask(task.id, team.id);
+                            if (!isRenaming) {
+                              menuOpenRequestKeyRef.current = taskKey;
+                              setOpenMenuKey(taskKey);
+                            }
+                            return;
+                          }
+                          if (ev.button !== 0) {
+                            return;
+                          }
                           pointerStateRef.current = {
                             key: taskKey,
                             x: ev.clientX,
@@ -549,21 +603,56 @@ export function TimelineGrid({
                           }
                           const deltaX = Math.abs(ev.clientX - pointer.x);
                           const deltaY = Math.abs(ev.clientY - pointer.y);
-                          if (deltaX > 4 || deltaY > 4) {
+                          if (deltaX >= 1 || deltaY >= 1) {
                             pointerStateRef.current = { ...pointer, moved: true };
                           }
                         }}
+                        onMouseUp={(ev) => {
+                          ev.stopPropagation();
+                          if (ev.button !== 0) {
+                            return;
+                          }
+                          if (dragTaskKeyRef.current === taskKey) {
+                            pointerStateRef.current = null;
+                            return;
+                          }
+                          const pointer = pointerStateRef.current;
+                          if (!pointer || pointer.key !== taskKey) {
+                            pointerStateRef.current = null;
+                            return;
+                          }
+                          if (pointer.moved) {
+                            pointerStateRef.current = null;
+                            return;
+                          }
+                          pointerStateRef.current = null;
+                          onSelectTask(task.id, team.id);
+                          if (!isRenaming) {
+                            menuOpenRequestKeyRef.current = taskKey;
+                            setOpenMenuKey(taskKey);
+                          }
+                          suppressClickUntilRef.current = Date.now() + 120;
+                        }}
                         onClick={(ev) => {
                           ev.stopPropagation();
+                          if (Date.now() < suppressClickUntilRef.current) {
+                            return;
+                          }
                           if (dragTaskKeyRef.current === taskKey) {
                             dragTaskKeyRef.current = null;
                             return;
                           }
-                          if (pointerStateRef.current?.key === taskKey && pointerStateRef.current.moved) {
+                          if (
+                            pointerStateRef.current?.key !== taskKey ||
+                            pointerStateRef.current.moved
+                          ) {
+                            pointerStateRef.current = null;
                             return;
                           }
+                          pointerStateRef.current = null;
                           onSelectTask(task.id, team.id);
                           if (!isRenaming) {
+                            menuOpenRequestKeyRef.current = taskKey;
                             setOpenMenuKey(taskKey);
                           }
                         }}
@@ -575,17 +664,14 @@ export function TimelineGrid({
                         }}
                         onContextMenu={(ev) => {
                           ev.preventDefault();
-                          onSelectTask(task.id, team.id);
-                          if (!isRenaming) {
-                            setOpenMenuKey(taskKey);
-                          }
                         }}
                         title={`Assigned: ${assignedNames.join(", ")}`}
                         style={{
                           top: CARD_TOP + row * (CARD_HEIGHT + ROW_GAP),
                           left: startOffset * DAY_WIDTH + 2,
                           width: span * DAY_WIDTH - 4,
-                          backgroundColor: team.color
+                          backgroundColor: fillColor.bg,
+                          color: fillColor.fg
                         }}
                       >
                         <div
@@ -630,6 +716,50 @@ export function TimelineGrid({
                     {!isRenaming && (
                       <DropdownMenu.Portal>
                         <DropdownMenu.Content className="task-menu" sideOffset={6} align="start">
+                          <DropdownMenu.Sub>
+                            <DropdownMenu.SubTrigger className="task-menu-item">
+                              Assign To ▸
+                            </DropdownMenu.SubTrigger>
+                            <DropdownMenu.Portal>
+                              <DropdownMenu.SubContent className="task-menu" sideOffset={4} alignOffset={-4}>
+                                {inTaskTeamMembers.map((member) => {
+                                  const assigned = (task.assigned_to ?? []).includes(member.id);
+                                  return (
+                                    <DropdownMenu.Item
+                                      key={`${task.id}-assign-${member.id}`}
+                                      className="task-menu-item"
+                                      onSelect={(event) => {
+                                        event.preventDefault();
+                                        onToggleTaskAssignee(task, member.id);
+                                      }}
+                                    >
+                                      {assigned ? "✓ " : "  "}
+                                      {member.name}
+                                    </DropdownMenu.Item>
+                                  );
+                                })}
+                                {inTaskTeamMembers.length > 0 && otherMembers.length > 0 && (
+                                  <DropdownMenu.Separator className="task-menu-separator" />
+                                )}
+                                {otherMembers.map((member) => {
+                                  const assigned = (task.assigned_to ?? []).includes(member.id);
+                                  return (
+                                    <DropdownMenu.Item
+                                      key={`${task.id}-assign-${member.id}`}
+                                      className="task-menu-item"
+                                      onSelect={(event) => {
+                                        event.preventDefault();
+                                        onToggleTaskAssignee(task, member.id);
+                                      }}
+                                    >
+                                      {assigned ? "✓ " : "  "}
+                                      {member.name}
+                                    </DropdownMenu.Item>
+                                  );
+                                })}
+                              </DropdownMenu.SubContent>
+                            </DropdownMenu.Portal>
+                          </DropdownMenu.Sub>
                           <DropdownMenu.Item
                             className="task-menu-item"
                             onSelect={() => {

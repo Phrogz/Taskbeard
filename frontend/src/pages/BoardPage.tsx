@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { StudentPanel } from "../components/StudentPanel";
 import { TimelineGrid } from "../components/TimelineGrid";
 import type { PlannerPayload, TaskItem } from "../services/plannerApi";
 
@@ -19,6 +18,7 @@ type Props = {
   ) => void;
   onResizeTask: (task: TaskItem, startDate: string, endDate: string, estHours: number) => void;
   onToggleTaskComplete: (task: TaskItem) => void;
+  onToggleTaskAssignee: (task: TaskItem, memberId: string) => void;
   onDeleteTask: (task: TaskItem, teamId: string) => void;
   selectedTaskPlacement: SelectedTaskPlacement | null;
   renamingTaskId: string | null;
@@ -37,6 +37,7 @@ export function BoardPage({
   onMoveTask,
   onResizeTask,
   onToggleTaskComplete,
+  onToggleTaskAssignee,
   onDeleteTask,
   selectedTaskPlacement,
   renamingTaskId,
@@ -67,6 +68,7 @@ export function BoardPage({
           onMoveTask={onMoveTask}
           onResizeTask={onResizeTask}
           onToggleTaskComplete={onToggleTaskComplete}
+          onToggleTaskAssignee={onToggleTaskAssignee}
           onDeleteTask={onDeleteTask}
           selectedTaskPlacement={selectedTaskPlacement}
           renamingTaskId={renamingTaskId}
@@ -81,9 +83,8 @@ export function BoardPage({
         />
       </div>
       <aside className="board-sidebar">
-        <StudentPanel planner={planner} />
         <div className="warnings">
-          <h3>Dependency Warnings</h3>
+          <h3>Warnings</h3>
           {planner.tasks
             .filter((task) => warningByTask.has(task.id))
             .map((task) => (

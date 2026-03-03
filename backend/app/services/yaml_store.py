@@ -9,13 +9,23 @@ import yaml
 
 
 FILE_KEYS: dict[str, str] = {
-    "config/season.yaml": "season",
-    "config/practices.yaml": "default_hours_per_day",
-    "config/events.yaml": "events",
-    "config/breaks.yaml": "breaks",
-    "config/teams.yaml": "teams",
-    "config/members.yaml": "members",
+    "season.yaml": "season",
+    "practices.yaml": "default_hours_per_day",
+    "events.yaml": "events",
+    "breaks.yaml": "breaks",
+    "teams.yaml": "teams",
+    "members.yaml": "members",
     "tasks.yaml": "tasks",
+}
+
+ROOT_KEY_TYPES: dict[str, type] = {
+    "season": dict,
+    "default_hours_per_day": dict,
+    "events": list,
+    "breaks": list,
+    "teams": list,
+    "members": list,
+    "tasks": list,
 }
 
 
@@ -71,9 +81,34 @@ class YamlStore:
             tmp_path.replace(path)
         return copy.deepcopy(payload)
 
+    def parse_yaml_text(self, rel_path: str, yaml_text: str) -> dict[str, Any]:
+        self._ensure_known(rel_path)
+        try:
+            value = yaml.safe_load(yaml_text) if yaml_text.strip() else {}
+        except yaml.YAMLError as error:
+            raise ValueError(f"Invalid YAML for {rel_path}: {error}") from error
+
+        if value is None:
+            value = {}
+        if not isinstance(value, dict):
+            raise ValueError(f"YAML root must be a mapping in {rel_path}")
+
+        self._validate_payload(rel_path, value)
+        return value
+
+    def write_yaml_text(self, rel_path: str, yaml_text: str) -> dict[str, Any]:
+        payload = self.parse_yaml_text(rel_path, yaml_text)
+        return self.write(rel_path, payload)
+
     def _validate_payload(self, rel_path: str, payload: dict[str, Any]) -> None:
         required_root_key = FILE_KEYS[rel_path]
         if required_root_key not in payload:
             raise ValueError(
                 f"File {rel_path} must include root key '{required_root_key}'"
+            )
+        expected_type = ROOT_KEY_TYPES.get(required_root_key)
+        if expected_type and not isinstance(payload.get(required_root_key), expected_type):
+            expected_name = "mapping" if expected_type is dict else "list"
+            raise ValueError(
+                f"File {rel_path} key '{required_root_key}' must be a {expected_name}"
             )

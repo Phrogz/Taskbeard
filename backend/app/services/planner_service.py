@@ -48,12 +48,12 @@ class PlannerService:
     store: YamlStore
 
     def read_all(self) -> dict[str, Any]:
-        season_file = self.store.read("config/season.yaml")
-        practices_file = self.store.read("config/practices.yaml")
-        events_file = self.store.read("config/events.yaml")
-        breaks_file = self.store.read("config/breaks.yaml")
-        teams_file = self.store.read("config/teams.yaml")
-        members_file = self.store.read("config/members.yaml")
+        season_file = self.store.read("season.yaml")
+        practices_file = self.store.read("practices.yaml")
+        events_file = self.store.read("events.yaml")
+        breaks_file = self.store.read("breaks.yaml")
+        teams_file = self.store.read("teams.yaml")
+        members_file = self.store.read("members.yaml")
         tasks_file = self.store.read("tasks.yaml")
 
         season = season_file.get("season", {})
