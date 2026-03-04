@@ -20,6 +20,9 @@ frontend/e2e/screenshots/
 frontend/test-results/
 frontend/playwright-report/
 
+# --- Runtime artifacts ---
+.taskmanagement/runtime.json
+
 # --- IDE / OS ---
 .vscode/
 .idea/

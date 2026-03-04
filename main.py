@@ -290,8 +290,8 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--backend-port", type=int, default=8000, show_default=True)
-@click.option("--frontend-port", type=int, default=5173, show_default=True)
+@click.option("--backend-port", type=int, default=8000, show_default=True, envvar="TASKBEARD_BACKEND_PORT")
+@click.option("--frontend-port", type=int, default=5173, show_default=True, envvar="TASKBEARD_FRONTEND_PORT")
 @click.option("--skip-frontend-install", is_flag=True)
 def start(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
     raise SystemExit(start_servers(backend_port, frontend_port, skip_frontend_install))
@@ -299,16 +299,16 @@ def start(backend_port: int, frontend_port: int, skip_frontend_install: bool) ->
 
 @cli.command()
 @click.option("--timeout", type=float, default=8.0, show_default=True, help="Seconds to wait before force kill")
-@click.option("--backend-port", type=int, default=8000, show_default=True)
-@click.option("--frontend-port", type=int, default=5173, show_default=True)
+@click.option("--backend-port", type=int, default=8000, show_default=True, envvar="TASKBEARD_BACKEND_PORT")
+@click.option("--frontend-port", type=int, default=5173, show_default=True, envvar="TASKBEARD_FRONTEND_PORT")
 @click.option("--extra-port", type=int, multiple=True, help="Additional port(s) to clear listeners from")
 def stop(timeout: float, backend_port: int, frontend_port: int, extra_port: tuple[int, ...]) -> None:
     raise SystemExit(stop_servers(timeout, backend_port, frontend_port, extra_port))
 
 
 @cli.command()
-@click.option("--backend-port", type=int, default=8000, show_default=True)
-@click.option("--frontend-port", type=int, default=5173, show_default=True)
+@click.option("--backend-port", type=int, default=8000, show_default=True, envvar="TASKBEARD_BACKEND_PORT")
+@click.option("--frontend-port", type=int, default=5173, show_default=True, envvar="TASKBEARD_FRONTEND_PORT")
 @click.option("--skip-frontend-install", is_flag=True)
 def restart(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
     stop_servers(timeout=8.0, backend_port=backend_port, frontend_port=frontend_port, extra_port=())
