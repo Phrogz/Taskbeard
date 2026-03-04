@@ -22,6 +22,7 @@ export type TaskItem = {
   assigned_to: string[];
   completed: boolean;
   priority: "urgent" | "need" | "want";
+  description?: string;
 };
 
 export type PlannerPayload = {

@@ -7,28 +7,37 @@ type EditableTaskRow = {
   title: string;
   priority: TaskItem["priority"];
   est_hours: string;
+  description: string;
+  completed: boolean;
 };
 
 type Props = {
   planner: PlannerPayload;
   onCommitTaskRow: (
     teamId: string,
-    row: { task_id: string | null; title: string; priority: TaskItem["priority"]; est_hours: number }
+    row: { task_id: string | null; title: string; priority: TaskItem["priority"]; est_hours: number; description: string }
   ) => Promise<void>;
 };
 
-const COLUMNS = ["title", "priority", "est_hours"] as const;
+const COLUMNS = ["title", "priority", "est_hours", "description"] as const;
 type ColumnKey = (typeof COLUMNS)[number];
+
+const DEFAULT_EST_HOURS = "4";
 
 const blankRow = (): EditableTaskRow => ({
   task_id: null,
   title: "",
   priority: "need",
-  est_hours: "",
+  est_hours: DEFAULT_EST_HOURS,
+  description: "",
+  completed: false,
 });
 
 function hasValue(row: EditableTaskRow): boolean {
-  return row.title.trim().length > 0 || row.est_hours.trim().length > 0 || row.priority !== "need";
+  return row.title.trim().length > 0
+    || (row.est_hours.trim() !== "" && row.est_hours !== DEFAULT_EST_HOURS)
+    || row.priority !== "need"
+    || row.description.trim().length > 0;
 }
 
 function ensureTrailingBlank(rows: EditableTaskRow[]): EditableTaskRow[] {
@@ -47,11 +56,14 @@ function buildRowsByTeam(planner: PlannerPayload): Record<string, EditableTaskRo
   planner.teams.forEach((team) => {
     const teamRows = planner.tasks
       .filter((task) => task.teams.includes(team.id))
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
       .map((task) => ({
         task_id: task.id,
         title: task.title,
         priority: task.priority ?? "need",
         est_hours: String(Number(task.est_hours ?? 0)),
+        description: task.description ?? "",
+        completed: task.completed ?? false,
       }));
     values[team.id] = ensureTrailingBlank(teamRows);
   });
@@ -130,6 +142,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
         title,
         priority: row.priority,
         est_hours: normalizeHours(row.est_hours),
+        description: row.description,
       });
       return true;
     } finally {
@@ -189,21 +202,21 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
         const teamColor = teamDefaultColor(team, planner.colors).bg;
         return (
           <section key={team.id} className="task-list-team">
-            <div className="task-list-team-head">
-              <span className="task-list-team-badge" style={{ backgroundColor: teamColor }} aria-hidden="true" />
-              <h3>{team.name}</h3>
-            </div>
             <table className="task-list-table">
               <thead>
                 <tr>
-                  <th>Task Name</th>
-                  <th>Priority</th>
-                  <th>Est Hours</th>
+                  <th className="task-list-col-title">
+                    <span className="task-list-team-badge" style={{ backgroundColor: teamColor }} aria-hidden="true" />
+                    {team.name} Tasks
+                  </th>
+                  <th className="task-list-col-priority">Priority</th>
+                  <th className="task-list-col-hours">~Hours</th>
+                  <th>Description</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, rowIndex) => (
-                  <tr key={`${team.id}-${row.task_id ?? `draft-${rowIndex}`}`}>
+                  <tr key={`${team.id}-${row.task_id ?? `draft-${rowIndex}`}`} className={row.completed ? "completed" : ""}>
                     <td>
                       <input
                         value={row.title}
@@ -245,7 +258,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
                         <option value="want">want</option>
                       </select>
                     </td>
-                    <td>
+                    <td className="task-list-col-hours">
                       <input
                         value={row.est_hours}
                         ref={(element) => setRef(team.id, rowIndex, "est_hours", element)}
@@ -263,6 +276,24 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
                         inputMode="decimal"
                         disabled={savingTeamId === team.id}
                         data-testid={`task-list-${team.id}-${rowIndex}-est_hours`}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={row.description}
+                        ref={(element) => setRef(team.id, rowIndex, "description", element)}
+                        onFocus={() => {
+                          focusSnapshots.current.set(`${team.id}:${rowIndex}:description`, row.description);
+                        }}
+                        onChange={(event) =>
+                          updateRow(team.id, rowIndex, (current) => ({
+                            ...current,
+                            description: event.target.value,
+                          }))
+                        }
+                        onKeyDown={(event) => onCellKeyDown(event, team.id, rowIndex, "description")}
+                        disabled={savingTeamId === team.id}
+                        data-testid={`task-list-${team.id}-${rowIndex}-description`}
                       />
                     </td>
                   </tr>

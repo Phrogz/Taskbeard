@@ -71,6 +71,7 @@ describe("TaskListPage spreadsheet behavior", () => {
         title: "Alpha Updated",
         priority: "need",
         est_hours: 2,
+        description: "",
       });
     });
 
@@ -83,19 +84,19 @@ describe("TaskListPage spreadsheet behavior", () => {
     const onCommitTaskRow = vi.fn().mockResolvedValue(undefined);
     render(<TaskListPage planner={planner} onCommitTaskRow={onCommitTaskRow} />);
 
-    const row0Hours = screen.getByTestId("task-list-team-a-0-est_hours");
+    const row0Description = screen.getByTestId("task-list-team-a-0-description");
     const row1Title = screen.getByTestId("task-list-team-a-1-title");
 
-    row0Hours.focus();
-    fireEvent.change(row0Hours, { target: { value: "5" } });
-    fireEvent.keyDown(row0Hours, { key: "Tab" });
+    row0Description.focus();
+    fireEvent.keyDown(row0Description, { key: "Tab" });
 
     await waitFor(() => {
       expect(onCommitTaskRow).toHaveBeenCalledWith("team-a", {
         task_id: "task-1",
         title: "Alpha",
         priority: "need",
-        est_hours: 5,
+        est_hours: 2,
+        description: "",
       });
     });
 
@@ -119,5 +120,37 @@ describe("TaskListPage spreadsheet behavior", () => {
       expect(document.activeElement).not.toBe(row0Title);
       expect(onCommitTaskRow).not.toHaveBeenCalled();
     });
+  });
+
+  it("applies completed class to rows for completed tasks", () => {
+    const completedPlanner: PlannerPayload = {
+      ...planner,
+      tasks: [
+        { ...planner.tasks[0], completed: true },
+        planner.tasks[1],
+      ],
+    };
+    const onCommitTaskRow = vi.fn().mockResolvedValue(undefined);
+    render(<TaskListPage planner={completedPlanner} onCommitTaskRow={onCommitTaskRow} />);
+
+    const completedRow = screen.getByTestId("task-list-team-a-0-title").closest("tr")!;
+    const activeRow = screen.getByTestId("task-list-team-a-1-title").closest("tr")!;
+
+    expect(completedRow).toHaveClass("completed");
+    expect(activeRow).not.toHaveClass("completed");
+  });
+
+  it("typing in description of an existing row does not spawn extra blank rows", () => {
+    const onCommitTaskRow = vi.fn().mockResolvedValue(undefined);
+    render(<TaskListPage planner={planner} onCommitTaskRow={onCommitTaskRow} />);
+
+    const tbody = screen.getByTestId("task-list-team-a-0-title").closest("tbody")!;
+    const rowCountBefore = tbody.querySelectorAll("tr").length;
+
+    const descInput = screen.getByTestId("task-list-team-a-0-description");
+    fireEvent.change(descInput, { target: { value: "Some notes" } });
+
+    const rowCountAfter = tbody.querySelectorAll("tr").length;
+    expect(rowCountAfter).toBe(rowCountBefore);
   });
 });

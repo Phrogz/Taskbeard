@@ -18,9 +18,10 @@ dependencies = [
 ]
 
 [project.scripts]
-start = "main:start_cli"
-stop = "main:stop_cli"
-restart = "main:restart_cli"
+taskbeard = "main:cli"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.setuptools]
 py-modules = ["main"]

@@ -7,7 +7,8 @@
   "settings": {
     "vitest.rootConfig": "frontend/vite.config.ts",
     "vitest.vitestPackagePath": "frontend/node_modules/vitest/package.json",
-    "testing.automaticallyOpenTestResults": "openOnTestFailure"
+    "testing.automaticallyOpenTestResults": "openOnTestFailure",
+    "explorer.excludeGitIgnore": true
   },
   "extensions": {
     "recommendations": [

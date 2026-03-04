@@ -33,5 +33,15 @@
 - [x] Ensure tasks can overlap breaks.
 - [x] Hovering a day should show how many hours of practice time there are.
 - [x] Days that have overrides should somehow be visually differentiated, with a tooltip showing the override details. (Both cancelling a practice, or extending a practice.)
-- [ ] Change the default hours for a new task on the Task List page to 4 instead of 0.
-- [ ] Change the hash for the page when switching views, so that back/forward buttons work as expected.
+- [x] Change the default hours for a new task on the Task List page to 4 instead of 0.
+- [x] Change the hash for the page when switching views, so that back/forward buttons work as expected.
+- [x] People view: when "People" is toggled on, each team section shows person sub-rows (team members + anyone with an assigned task for that team, alphabetically). Person names in a column to the right of team headers. Assignment indicators are colored boxes (matching the task's team color) with task-name tooltip on hover. Indicators are not draggable. Clicking selects; Delete/Backspace or "Unassign" context menu removes the assignment.
+- [x] Move "Warnings" to be below the timeline. (We need the horizontal real-estate.) Make each warning appear as a card, with a circled question mark on each that helps show the tooltip.
+- [x] Add a "Priority" submenu to the context menu for tasks, with three priorities listed, and the active one checked. Choosing a different priority changes to that priority, which updates the rendering style of the task, but does not dismiss the context menu.
+- [x] When People is enabled for the timeline, but Teams is not, show only one row for each person, no teams row or header. People are listed in alphabetical order. Instead of a "assignment color" for tasks in the row, the task itself—with text, and normal context menu, applies. Changing dates for just that person's assigned task changes dates for the entire task. Add a warning if a single person has two tasks assigned on the same day, showing in the warning badge which tasks are assigned and on which date(s).
+- [x] Move events and travel information, and the breaks information, into the season file; delete the events and breaks files.
+- [x] In the config page, move the "Update" button onto the same line as the header, rename  it to "Save Changes", and disable the button if the textarea is not dirty. If the user attempts to Save the data and there's an error, leave the Save button enabled.
+- [x] Clean up task IDs: replace ugly auto-generated IDs (e.g. `task-mmau3qar-kgr3oc`) with title-derived slugs; keep human-readable IDs; regenerate ID on rename and update `depends_on` references. Compact YAML serialization: empty list → `foo: ` (null), single → `foo: bar`, multiple → `foo: [bar, baz]`; reading supports all forms including `foo: []`.
+- [x] Add icons for all context menu items, or empty spacing where a checkbox is possible but not present, to keep them all aligned.
+- [x] I cannot drag the right side of a task to the left to make it take fewer days. When I drag the right side of a task, it should move live during dragging, updating width with each day that the mouse has moved, not only when I release the drag.
+- [ ] Add +/- buttons at the right side above the Timeline, when the Timeline is visible, which adjust the width of day columns by 1px with each push.

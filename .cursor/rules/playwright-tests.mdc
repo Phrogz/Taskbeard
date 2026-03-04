@@ -1,0 +1,29 @@
+---
+description: Playwright e2e test execution conventions
+globs: 
+alwaysApply: true
+---
+
+# Playwright E2E Tests
+
+ALL Playwright commands (test runs, installs, codegen) MUST use `required_permissions: ["all"]` on the Shell tool. Playwright launches real browser processes that require unrestricted sandbox access.
+
+Before running tests, check if browsers are installed:
+
+```bash
+PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install --dry-run 2>&1 | head -5
+```
+
+If the output indicates browsers are missing, install only chromium:
+
+```bash
+npx playwright install chromium
+```
+
+To run tests:
+
+```bash
+cd frontend && npx playwright test e2e/<spec-file>.spec.ts --reporter=line
+```
+
+The Playwright config uses Vite dev server on port 4173 with `reuseExistingServer: true`.

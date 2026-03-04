@@ -20,28 +20,28 @@ From repo root:
 
 ```bash
 uv sync
-uv run start
+taskbeard start
 ```
 
 Stop both servers:
 
 ```bash
-uv run stop
+taskbeard stop
 ```
 
 Restart both servers:
 
 ```bash
-uv run restart
+taskbeard restart
 ```
 
 Optional flags:
 
 ```bash
-uv run start --backend-port 8000 --frontend-port 5173
-uv run start --skip-frontend-install
-uv run stop --timeout 10
-uv run stop --backend-port 8000 --frontend-port 5173 --extra-port 5174
+taskbeard start --backend-port 8000 --frontend-port 5173
+taskbeard start --skip-frontend-install
+taskbeard stop --timeout 10
+taskbeard stop --backend-port 8000 --frontend-port 5173 --extra-port 5174
 ```
 
 ## Frontend

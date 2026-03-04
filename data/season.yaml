@@ -1,4 +1,40 @@
 season:
-  start_date: 2026-02-16
-  end_date: 2026-04-26
+  start_date: '2026-02-16'
+  end_date: '2026-04-26'
   timezone: America/Denver
+events:
+- id: denver-regional
+  name: Denver Regional
+  tba: 2026code
+  start_date: '2026-04-09'
+  end_date: '2026-04-11'
+  travel:
+  - date: '2026-04-07'
+    label: Pack Room
+  - date: '2026-04-08'
+    label: Load Trailer + Load-In
+  - date: '2026-04-12'
+    label: Limited Unloading & Unpacking
+- id: utah-regional
+  name: Utah Regional
+  tba: 2026utwv
+  start_date: '2026-04-16'
+  end_date: '2026-04-18'
+  travel:
+  - date: '2026-04-14'
+    label: Repacking & Repacking the Trailer
+  - date: '2026-04-15'
+    label: Travel to Utah
+  - date: '2026-04-19'
+    label: Return Travel
+  - date: '2026-04-20'
+    label: Unload and Unpack
+breaks:
+- id: winterim
+  name: Winterim
+  start_date: '2026-03-06'
+  end_date: '2026-03-15'
+- id: spring-break
+  name: Spring Break
+  start_date: '2026-03-16'
+  end_date: '2026-03-21'

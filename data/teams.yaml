@@ -1,19 +1,19 @@
 teams:
-  - id: cad
-    name: CAD
-    colors: greens
-  - id: build
-    name: Build
-    colors: blues
-  - id: electrical
-    name: Electrical
-    colors: pinks
-  - id: code
-    name: Code
-    colors: purples
-  - id: business
-    name: Business
-    colors: pinks
-  - id: admin
-    name: Admin
-    colors: reds
+- id: cad
+  name: CAD
+  colors: greens
+- id: build
+  name: Build
+  colors: blues
+- id: electrical
+  name: Electrical
+  colors: pinks
+- id: code
+  name: Code
+  colors: purples
+- id: business
+  name: Business
+  colors: oranges
+- id: admin
+  name: Admin
+  colors: teals

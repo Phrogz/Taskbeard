@@ -52,8 +52,6 @@ class PlannerService:
     def read_all(self) -> dict[str, Any]:
         season_file = self.store.read("season.yaml")
         practices_file = self.store.read("practices.yaml")
-        events_file = self.store.read("events.yaml")
-        breaks_file = self.store.read("breaks.yaml")
         teams_file = self.store.read("teams.yaml")
         colors_file = self.store.read("colors.yaml")
         members_file = self.store.read("members.yaml")
@@ -66,14 +64,15 @@ class PlannerService:
         return {
             "season": season,
             "practices": practices_file,
-            "events": events_file.get("events", []),
-            "breaks": breaks_file.get("breaks", []),
+            "events": season_file.get("events", []),
+            "breaks": season_file.get("breaks", []),
             "teams": teams_file.get("teams", []),
             "colors": colors_file.get("colors", {}),
             "members": members,
             "tasks": tasks,
             "dates": self._build_dates(season),
-            "dependency_warnings": self._dependency_warnings(tasks),
+            "dependency_warnings": self._dependency_warnings(tasks)
+            + self._assignment_overlap_warnings(tasks, members),
             "student_task_map": self._student_task_map(members, tasks),
         }
 
@@ -171,6 +170,66 @@ class PlannerService:
                             "dependency_id": dependency_id,
                             "message": "Task starts before dependency ends",
                         }
+                    )
+        return warnings
+
+    def _assignment_overlap_warnings(
+        self,
+        tasks: list[dict[str, Any]],
+        members: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        member_name_by_id = {
+            str(m.get("id", "")).strip(): str(m.get("name", ""))
+            for m in members
+            if str(m.get("id", "")).strip()
+        }
+        member_tasks: dict[str, list[dict[str, Any]]] = {}
+        for task in tasks:
+            if bool(task.get("completed")):
+                continue
+            for mid in task.get("assigned_to", []):
+                if mid:
+                    member_tasks.setdefault(mid, []).append(task)
+
+        warnings: list[dict[str, Any]] = []
+        seen_pairs: set[tuple[str, str, str]] = set()
+
+        for mid, assigned in member_tasks.items():
+            member_name = member_name_by_id.get(mid, mid)
+            for i, t1 in enumerate(assigned):
+                t1_start = _normalize_date_str(t1.get("start_date"))
+                t1_end = _normalize_date_str(t1.get("end_date"))
+                if not t1_start or not t1_end:
+                    continue
+                for t2 in assigned[i + 1 :]:
+                    t2_start = _normalize_date_str(t2.get("start_date"))
+                    t2_end = _normalize_date_str(t2.get("end_date"))
+                    if not t2_start or not t2_end:
+                        continue
+                    overlap_start = max(t1_start, t2_start)
+                    overlap_end = min(t1_end, t2_end)
+                    if overlap_start > overlap_end:
+                        continue
+                    t1_id = t1.get("id", "")
+                    t2_id = t2.get("id", "")
+                    pair_key = (mid, min(t1_id, t2_id), max(t1_id, t2_id))
+                    if pair_key in seen_pairs:
+                        continue
+                    seen_pairs.add(pair_key)
+
+                    t1_title = t1.get("title", t1_id)
+                    t2_title = t2.get("title", t2_id)
+                    if overlap_start == overlap_end:
+                        date_desc = overlap_start
+                    else:
+                        date_desc = f"{overlap_start} to {overlap_end}"
+                    msg = f"{member_name}: also assigned '{t2_title}' on {date_desc}"
+                    warnings.append(
+                        {"task_id": t1_id, "dependency_id": None, "message": msg}
+                    )
+                    msg2 = f"{member_name}: also assigned '{t1_title}' on {date_desc}"
+                    warnings.append(
+                        {"task_id": t2_id, "dependency_id": None, "message": msg2}
                     )
         return warnings
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+import re
 from typing import Any
-import uuid
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -12,6 +12,50 @@ from ..services.file_watch_service import EventBroker
 router = APIRouter(prefix="/api", tags=["planner"])
 
 POLYMORPHIC_TASK_FIELDS = ("teams", "depends_on", "assigned_to")
+
+_AUTO_ID_RE = re.compile(
+    r"^task-[a-z0-9]{6,10}-[a-z0-9]{4,8}$"  # frontend timestamp-random
+    r"|^task-[0-9a-f]{7,8}$"                  # backend uuid hex
+)
+
+
+def _slugify(title: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+    return re.sub(r"-+", "-", slug) or "task"
+
+
+def _unique_slug(base: str, used: set[str]) -> str:
+    if base not in used:
+        return base
+    counter = 2
+    while f"{base}-{counter}" in used:
+        counter += 1
+    return f"{base}-{counter}"
+
+
+def _normalize_task_ids(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Replace auto-generated IDs with title-derived slugs; update depends_on refs."""
+    used_ids: set[str] = set()
+    old_to_new: dict[str, str] = {}
+
+    for task in tasks:
+        old_id = task.get("id", "")
+        if _AUTO_ID_RE.match(old_id):
+            slug = _unique_slug(_slugify(task.get("title", "task")), used_ids)
+            task["id"] = slug
+            if old_id != slug:
+                old_to_new[old_id] = slug
+        used_ids.add(task.get("id", ""))
+
+    if old_to_new:
+        for task in tasks:
+            deps = task.get("depends_on", [])
+            if isinstance(deps, list):
+                task["depends_on"] = [old_to_new.get(d, d) for d in deps]
+            elif isinstance(deps, str) and deps in old_to_new:
+                task["depends_on"] = old_to_new[deps]
+
+    return tasks
 
 
 def _normalize_priority(value: Any) -> str:
@@ -91,6 +135,7 @@ async def put_tasks(payload: dict, request: Request):
     if not isinstance(raw_tasks, list):
         raise HTTPException(status_code=400, detail="tasks must be a list")
     tasks = [_normalize_task(task) for task in raw_tasks if isinstance(task, dict)]
+    _normalize_task_ids(tasks)
     try:
         value = _write_tasks(store, tasks)
     except ValueError as error:
@@ -108,7 +153,9 @@ async def create_task(payload: dict, request: Request):
     tasks = _read_normalized_tasks(store)
 
     item = _normalize_task(dict(payload))
-    item.setdefault("id", f"task-{uuid.uuid4().hex[:8]}")
+    existing_ids = {t.get("id", "") for t in tasks}
+    if not item.get("id"):
+        item["id"] = _unique_slug(_slugify(item.get("title", "task")), existing_ids)
     item.setdefault("depends_on", [])
     item.setdefault("teams", [])
     item.setdefault("assigned_to", [])

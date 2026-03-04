@@ -11,8 +11,6 @@ type Props = {
 type ConfigKey =
   | "season"
   | "practices"
-  | "events"
-  | "breaks"
   | "teams"
   | "colors"
   | "members"
@@ -25,17 +23,26 @@ type ConfigDoc = {
 
 const CONFIG_DOCS: ConfigDoc[] = [
   { key: "season", title: "Season" },
-  { key: "practices", title: "Practices + Overrides" },
-  { key: "events", title: "Events + Travel" },
-  { key: "breaks", title: "Breaks" },
-  { key: "teams", title: "Teams + Colors" },
+  { key: "practices", title: "Practices" },
+  { key: "teams", title: "Teams" },
   { key: "colors", title: "Color Palettes" },
-  { key: "members", title: "Members + Team Membership" },
+  { key: "members", title: "Members" },
   { key: "tasks", title: "Tasks" },
 ];
 
 function toYamlText(payload: unknown): string {
   return dump(payload, { sortKeys: false, lineWidth: 120 });
+}
+
+function buildInitialDocs(planner: PlannerPayload): Record<ConfigKey, string> {
+  return {
+    season: toYamlText({ season: planner.season, events: planner.events, breaks: planner.breaks }),
+    practices: toYamlText(planner.practices),
+    teams: toYamlText({ teams: planner.teams }),
+    colors: toYamlText({ colors: planner.colors }),
+    members: toYamlText({ members: planner.members }),
+    tasks: toYamlText({ tasks: planner.tasks }),
+  };
 }
 
 function syntaxCheck(name: ConfigKey, text: string): void {
@@ -48,16 +55,8 @@ function syntaxCheck(name: ConfigKey, text: string): void {
 }
 
 export function ConfigPage({ planner, onSaved }: Props) {
-  const [documents, setDocuments] = useState<Record<ConfigKey, string>>({
-    season: toYamlText({ season: planner.season }),
-    practices: toYamlText(planner.practices),
-    events: toYamlText({ events: planner.events }),
-    breaks: toYamlText({ breaks: planner.breaks }),
-    teams: toYamlText({ teams: planner.teams }),
-    colors: toYamlText({ colors: planner.colors }),
-    members: toYamlText({ members: planner.members }),
-    tasks: toYamlText({ tasks: planner.tasks }),
-  });
+  const [documents, setDocuments] = useState(() => buildInitialDocs(planner));
+  const [originals, setOriginals] = useState(() => buildInitialDocs(planner));
   const [fileWarnings, setFileWarnings] = useState<Partial<Record<ConfigKey, string>>>({});
   const [status, setStatus] = useState("");
 
@@ -69,6 +68,7 @@ export function ConfigPage({ planner, onSaved }: Props) {
       syntaxCheck(key, yamlText);
       await putConfigYaml(key, yamlText);
       setFileWarnings((current) => ({ ...current, [key]: "" }));
+      setOriginals((current) => ({ ...current, [key]: yamlText }));
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Update failed";
@@ -108,23 +108,24 @@ export function ConfigPage({ planner, onSaved }: Props) {
       <div className="editor-grid">
         {CONFIG_DOCS.map((doc) => (
           <section key={doc.key} className="config-section">
-            <div className="config-section-head">
-              <h3>{doc.title}</h3>
+            <h3 className="config-section-head">
+              {doc.title}
               <button
+                disabled={documents[doc.key] === originals[doc.key]}
                 onClick={async () => {
-                  setStatus(`Updating ${doc.key}.yaml...`);
+                  setStatus(`Saving ${doc.key}.yaml...`);
                   const ok = await updateOne(doc.key);
                   if (ok) {
-                    setStatus(`Updated ${doc.key}.yaml`);
+                    setStatus(`Saved ${doc.key}.yaml`);
                     onSaved();
                   } else {
-                    setStatus(`Failed to update ${doc.key}.yaml`);
+                    setStatus(`Failed to save ${doc.key}.yaml`);
                   }
                 }}
               >
-                Update
+                Save Changes
               </button>
-            </div>
+            </h3>
             <textarea
               value={documents[doc.key]}
               onChange={(event) =>

@@ -8,11 +8,27 @@ from typing import Any
 import yaml
 
 
+class _CompactDumper(yaml.SafeDumper):
+    """SafeDumper that renders scalar-only lists inline and None as empty."""
+
+
+def _represent_list(dumper: yaml.Dumper, data: list) -> yaml.Node:
+    if data and all(isinstance(item, (str, int, float, bool)) for item in data):
+        return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
+    return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=False)
+
+
+def _represent_none(dumper: yaml.Dumper, _data: object) -> yaml.Node:
+    return dumper.represent_scalar("tag:yaml.org,2002:null", "")
+
+
+_CompactDumper.add_representer(list, _represent_list)
+_CompactDumper.add_representer(type(None), _represent_none)
+
+
 FILE_KEYS: dict[str, str] = {
     "season.yaml": "season",
     "practices.yaml": "default_hours_per_day",
-    "events.yaml": "events",
-    "breaks.yaml": "breaks",
     "teams.yaml": "teams",
     "colors.yaml": "colors",
     "members.yaml": "members",
@@ -22,12 +38,14 @@ FILE_KEYS: dict[str, str] = {
 ROOT_KEY_TYPES: dict[str, type] = {
     "season": dict,
     "default_hours_per_day": dict,
-    "events": list,
-    "breaks": list,
     "teams": list,
     "colors": dict,
     "members": list,
     "tasks": list,
+}
+
+EXTRA_KEY_TYPES: dict[str, dict[str, type]] = {
+    "season.yaml": {"events": list, "breaks": list},
 }
 
 
@@ -73,9 +91,10 @@ class YamlStore:
         with lock:
             tmp_path = path.with_suffix(path.suffix + ".tmp")
             with tmp_path.open("w", encoding="utf-8") as stream:
-                yaml.safe_dump(
+                yaml.dump(
                     payload,
                     stream,
+                    Dumper=_CompactDumper,
                     sort_keys=False,
                     default_flow_style=False,
                     allow_unicode=True,
@@ -114,3 +133,9 @@ class YamlStore:
             raise ValueError(
                 f"File {rel_path} key '{required_root_key}' must be a {expected_name}"
             )
+        for key, etype in EXTRA_KEY_TYPES.get(rel_path, {}).items():
+            if key in payload and not isinstance(payload[key], etype):
+                expected_name = "mapping" if etype is dict else "list"
+                raise ValueError(
+                    f"File {rel_path} key '{key}' must be a {expected_name}"
+                )

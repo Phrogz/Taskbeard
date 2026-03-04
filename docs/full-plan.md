@@ -55,12 +55,10 @@ Build a web app that resembles the seasonal robotics planning sheet and supports
 
 ## YAML Storage Layout
 
-- `data/season.yaml`
+- `data/season.yaml` (includes season dates, events + travel, and breaks)
 - `data/practices.yaml`
-- `data/events.yaml`
 - `data/teams.yaml`
 - `data/members.yaml`
-- `data/breaks.yaml`
 - `data/tasks.yaml`
 
 All UI edits write back to these files. Any external edit to these files triggers a backend watcher event and frontend refresh.
@@ -105,6 +103,16 @@ All UI edits write back to these files. Any external edit to these files trigger
 - Double-click rename mode (Enter commit, Escape cancel).
 - Keyboard delete for selected tasks (blocked while renaming).
 - Undo/redo for task edits (move/resize/rename/complete/delete) with `Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`, `Cmd/Ctrl+Y`.
+
+- People timeline view: toggling "People" renders person sub-rows within each team. People list = team members union task assignees, sorted alphabetically. Assignment indicators are colored boxes matching each task's team-lane color. Hover shows task name. Click selects; Delete/Backspace or right-click "Unassign" removes the assignment. Indicators are not draggable. Team header spans all person rows; person names column (100px) appears to the right of team labels.
+
+- Warnings moved from right sidebar to a horizontal card bar below the timeline, reclaiming horizontal space. Each warning card shows the task name and a circled question-mark icon; hovering the icon reveals warning details in a tooltip.
+
+- Task context menu now includes a "Priority ▸" submenu (between "Assign To" and "Complete") listing Urgent, Need, and Want with a checkmark on the active priority. Selecting a priority updates the task's rendering style immediately without dismissing the menu.
+
+- People-only timeline view: when People is toggled on and Teams is toggled off (`#people`), the board shows a flat alphabetically-sorted list of all people — one row per person with full interactive task cards (draggable, resizable, context menu, rename). Task card colors come from the task's first team. Date changes apply to the entire task. Backend generates assignment-overlap warnings when a person has multiple tasks on the same day, shown as warning cards for both involved tasks.
+
+- Task YAML cleanup: auto-generated IDs (`task-mmau3qar-...`) replaced with title-derived slugs (e.g. `cad`, `use-cancoders-for-shooter`); human-readable IDs preserved. Renaming a task regenerates its slug ID and updates all `depends_on` references. YAML serialization uses compact format: `null` for empty lists, scalar for single values, inline flow `[a, b]` for multiples. Custom `_CompactDumper` in `yaml_store.py` handles this for all YAML files.
 
 ## Queued TODO (Next Phase)
 - Add regression tests for board interaction state transitions (selection, rename, undo/redo stack semantics).

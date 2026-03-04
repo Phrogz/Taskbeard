@@ -15,6 +15,11 @@ dist/
 dist-ssr/
 *.local
 
+# --- Playwright artifacts ---
+frontend/e2e/screenshots/
+frontend/test-results/
+frontend/playwright-report/
+
 # --- IDE / OS ---
 .vscode/
 .idea/

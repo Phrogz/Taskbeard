@@ -169,7 +169,7 @@ def start_servers(backend_port: int, frontend_port: int, skip_frontend_install: 
     frontend_dir = root / "frontend"
 
     if active_runtime():
-        click.echo("[start] Existing launcher runtime found. Run 'uv run stop' first.", err=True)
+        click.echo("[start] Existing launcher runtime found. Run 'taskbeard stop' first.", err=True)
         return 1
 
     blocked_ports: list[int] = []
@@ -179,7 +179,7 @@ def start_servers(backend_port: int, frontend_port: int, skip_frontend_install: 
         blocked_ports.append(frontend_port)
     if blocked_ports:
         click.echo(
-            "[start] Port(s) already in use: %s. Run 'uv run stop --backend-port %d --frontend-port %d' or free the ports manually."
+            "[start] Port(s) already in use: %s. Run 'taskbeard stop --backend-port %d --frontend-port %d' or free the ports manually."
             % (", ".join(str(port) for port in blocked_ports), backend_port, frontend_port),
             err=True,
         )
@@ -284,44 +284,36 @@ def stop_servers(timeout: float, backend_port: int, frontend_port: int, extra_po
     return 0
 
 
-@click.command(name="start")
-@click.option("--backend-port", type=int, default=8000)
-@click.option("--frontend-port", type=int, default=5173)
+@click.group()
+def cli() -> None:
+    """Taskbeard – Simple project-management for FRC teams."""
+
+
+@cli.command()
+@click.option("--backend-port", type=int, default=8000, show_default=True)
+@click.option("--frontend-port", type=int, default=5173, show_default=True)
 @click.option("--skip-frontend-install", is_flag=True)
-def start_cli(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
+def start(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
     raise SystemExit(start_servers(backend_port, frontend_port, skip_frontend_install))
 
 
-@click.command(name="stop")
-@click.option("--timeout", type=float, default=8.0, help="Seconds to wait before force kill")
-@click.option("--backend-port", type=int, default=8000)
-@click.option("--frontend-port", type=int, default=5173)
+@cli.command()
+@click.option("--timeout", type=float, default=8.0, show_default=True, help="Seconds to wait before force kill")
+@click.option("--backend-port", type=int, default=8000, show_default=True)
+@click.option("--frontend-port", type=int, default=5173, show_default=True)
 @click.option("--extra-port", type=int, multiple=True, help="Additional port(s) to clear listeners from")
-def stop_cli(timeout: float, backend_port: int, frontend_port: int, extra_port: tuple[int, ...]) -> None:
+def stop(timeout: float, backend_port: int, frontend_port: int, extra_port: tuple[int, ...]) -> None:
     raise SystemExit(stop_servers(timeout, backend_port, frontend_port, extra_port))
 
 
-@click.command(name="restart")
-@click.option("--backend-port", type=int, default=8000)
-@click.option("--frontend-port", type=int, default=5173)
+@cli.command()
+@click.option("--backend-port", type=int, default=8000, show_default=True)
+@click.option("--frontend-port", type=int, default=5173, show_default=True)
 @click.option("--skip-frontend-install", is_flag=True)
-def restart_cli(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
+def restart(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
     stop_servers(timeout=8.0, backend_port=backend_port, frontend_port=frontend_port, extra_port=())
     raise SystemExit(start_servers(backend_port, frontend_port, skip_frontend_install))
 
 
-def start() -> int:
-    return start_servers(backend_port=8000, frontend_port=5173, skip_frontend_install=False)
-
-
-def stop() -> int:
-    return stop_servers(timeout=8.0, backend_port=8000, frontend_port=5173, extra_port=())
-
-
-def restart() -> int:
-    stop()
-    return start()
-
-
 if __name__ == "__main__":
-    start_cli()
+    cli()

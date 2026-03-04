@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Users, Flag, Trash2, Check, UserMinus, ChevronRight } from "lucide-react";
 import type { PlannerPayload, TaskItem } from "../services/plannerApi";
 import { teamColorAt, teamDefaultColor } from "../services/teamColors";
 
@@ -12,6 +13,8 @@ type SelectedTaskPlacement = {
 
 type Props = {
   planner: PlannerPayload;
+  showTeams: boolean;
+  showPeople: boolean;
   onMoveTask: (
     task: TaskItem,
     startDate: string,
@@ -21,25 +24,31 @@ type Props = {
   ) => void;
   onResizeTask: (task: TaskItem, startDate: string, endDate: string, estHours: number) => void;
   onToggleTaskComplete: (task: TaskItem) => void;
+  onSetTaskPriority: (task: TaskItem, priority: TaskItem["priority"]) => void;
   onToggleTaskAssignee: (task: TaskItem, memberId: string) => void;
   onDeleteTask: (task: TaskItem, teamId: string) => void;
   selectedTaskPlacement: SelectedTaskPlacement | null;
+  selectedAssignment: { taskId: string; memberId: string } | null;
   renamingTaskId: string | null;
   renameDraft: string;
   onSelectTask: (taskId: string, teamId: string) => void;
+  onSelectAssignment: (taskId: string, memberId: string) => void;
   onClearSelection: () => void;
   onStartRenameTask: (task: TaskItem, teamId: string) => void;
   onRenameDraftChange: (value: string) => void;
   onCommitRename: () => void;
   onCancelRename: () => void;
   onCreateTaskAt: (startDate: string, teamId: string) => void;
+  dayWidth: number;
 };
 
-const DAY_WIDTH = 35;
 const CARD_HEIGHT = 30;
 const CARD_TOP = 2;
 const CARD_BOTTOM = 2;
 const ROW_GAP = 1;
+const TEAM_LABEL_WIDTH = 170;
+const PERSON_LABEL_WIDTH = 100;
+const PERSON_ROW_HEIGHT = 26;
 
 function dateDiff(a: string, b: string): number {
   const aMs = new Date(`${a}T00:00:00`).getTime();
@@ -93,27 +102,33 @@ function positionLaneTasks(tasks: TaskItem[], seasonStart: string): { items: Pos
 
 export function TimelineGrid({
   planner,
+  showTeams,
+  showPeople,
   onMoveTask,
   onResizeTask,
   onToggleTaskComplete,
+  onSetTaskPriority,
   onToggleTaskAssignee,
   onDeleteTask,
   selectedTaskPlacement,
+  selectedAssignment,
   renamingTaskId,
   renameDraft,
   onSelectTask,
+  onSelectAssignment,
   onClearSelection,
   onStartRenameTask,
   onRenameDraftChange,
   onCommitRename,
   onCancelRename,
   onCreateTaskAt,
+  dayWidth,
 }: Props) {
   const seasonStart = planner.season.start_date;
   const seasonEnd = planner.season.end_date;
   const days = planner.dates;
-  const totalWidth = days.length * DAY_WIDTH;
-  const dayColumns = `repeat(${days.length}, ${DAY_WIDTH}px)`;
+  const totalWidth = days.length * dayWidth;
+  const dayColumns = `repeat(${days.length}, ${dayWidth}px)`;
   const resizeStateRef = useRef<{
     task: TaskItem;
     side: "left" | "right";
@@ -121,11 +136,25 @@ export function TimelineGrid({
     originalStartOffset: number;
     originalEndOffset: number;
   } | null>(null);
+  const [resizePreview, setResizePreview] = useState<{
+    taskKey: string;
+    startOffset: number;
+    endOffset: number;
+  } | null>(null);
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
+  const [menuAnchorPos, setMenuAnchorPos] = useState<{ left: number; top: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const menuOpenRequestKeyRef = useRef<string | null>(null);
   const pointerStateRef = useRef<{ key: string; x: number; y: number; moved: boolean } | null>(null);
   const dragTaskKeyRef = useRef<string | null>(null);
   const suppressClickUntilRef = useRef(0);
+
+  const anchorPosFromEvent = (ev: React.MouseEvent) => {
+    const grid = (ev.currentTarget as HTMLElement).closest(".lane-grid");
+    if (!grid) return { left: 0, top: 0 };
+    const rect = grid.getBoundingClientRect();
+    return { left: ev.clientX - rect.left, top: ev.clientY - rect.top };
+  };
 
   const monthSpans = useMemo(() => {
     const spans: Array<{ key: string; label: string; spanDays: number }> = [];
@@ -248,6 +277,73 @@ export function TimelineGrid({
     });
   }, [planner.teams, planner.tasks, seasonStart, seasonEnd]);
 
+  const todayIndex = useMemo(() => days.findIndex(d => d.is_today), [days]);
+
+  const peopleOnlyMode = showPeople && !showTeams;
+
+  const personLaneData = useMemo(() => {
+    if (!peopleOnlyMode) return [];
+    const memberById = new Map(planner.members.map((m) => [m.id, m]));
+    const allIds = new Set<string>();
+    for (const m of planner.members) allIds.add(m.id);
+    for (const task of planner.tasks) {
+      for (const id of task.assigned_to ?? []) allIds.add(id);
+    }
+    const people = [...allIds]
+      .map((id) => memberById.get(id))
+      .filter((m): m is (typeof planner.members)[number] => Boolean(m))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return people.map((person) => {
+      const personTasks = planner.tasks
+        .filter((t) => (t.assigned_to ?? []).includes(person.id))
+        .filter((t) => t.start_date >= seasonStart && t.start_date <= seasonEnd);
+      const { items: positionedTasks, rowCount } = positionLaneTasks(personTasks, seasonStart);
+      const laneHeight = CARD_TOP + rowCount * CARD_HEIGHT + (rowCount - 1) * ROW_GAP + CARD_BOTTOM;
+      return { person, positionedTasks, laneHeight };
+    });
+  }, [peopleOnlyMode, planner.members, planner.tasks, seasonStart, seasonEnd]);
+
+  const labelWidth = peopleOnlyMode
+    ? TEAM_LABEL_WIDTH
+    : showPeople
+      ? PERSON_ROW_HEIGHT + PERSON_LABEL_WIDTH
+      : TEAM_LABEL_WIDTH;
+
+  const peopleByTeam = useMemo(() => {
+    if (!showPeople) return new Map<string, typeof planner.members>();
+    const memberById = new Map(planner.members.map((m) => [m.id, m]));
+    const result = new Map<string, typeof planner.members>();
+    for (const team of planner.teams) {
+      const ids = new Set(
+        planner.members.filter((m) => m.teams.includes(team.id)).map((m) => m.id)
+      );
+      for (const task of planner.tasks) {
+        if (task.teams.includes(team.id)) {
+          for (const id of task.assigned_to ?? []) ids.add(id);
+        }
+      }
+      result.set(
+        team.id,
+        [...ids]
+          .map((id) => memberById.get(id))
+          .filter((m): m is (typeof planner.members)[number] => Boolean(m))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+    }
+    return result;
+  }, [showPeople, planner.teams, planner.tasks, planner.members]);
+
+  const taskColorMap = useMemo(() => {
+    const map = new Map<string, { bg: string; fg: string }>();
+    for (const { team, positionedTasks } of laneData) {
+      for (const pt of positionedTasks) {
+        map.set(`${team.id}:${pt.task.id}`, teamColorAt(team, pt.row, planner.colors));
+      }
+    }
+    return map;
+  }, [laneData, planner.colors]);
+
   const breakSpans = useMemo(() => {
     return planner.breaks
       .map((schoolBreak) => {
@@ -343,10 +439,14 @@ export function TimelineGrid({
       return;
     }
     const copyMode = ev.altKey;
+    const cardRect = ev.currentTarget.getBoundingClientRect();
+    const rawOffset = Math.floor((ev.clientX - cardRect.left) / dayWidth);
+    const grabDayOffset = Number.isFinite(rawOffset) ? Math.max(0, rawOffset) : 0;
     ev.dataTransfer.setData("text/plain", taskId);
     ev.dataTransfer.setData("task_id", taskId);
     ev.dataTransfer.setData("source_team_id", teamId);
     ev.dataTransfer.setData("copy_mode", copyMode ? "1" : "0");
+    ev.dataTransfer.setData("grab_day_offset", String(grabDayOffset));
     ev.dataTransfer.effectAllowed = "copyMove";
     const taskKey = `${teamId}:${taskId}`;
     dragTaskKeyRef.current = taskKey;
@@ -357,21 +457,28 @@ export function TimelineGrid({
     if (copyMode) {
       ev.dataTransfer.dropEffect = "copy";
     }
+    setIsDragging(true);
   };
 
   const onDragEnd = () => {
     dragTaskKeyRef.current = null;
     suppressClickUntilRef.current = Date.now() + 200;
     pointerStateRef.current = null;
+    setIsDragging(false);
   };
 
   const onDrop = (ev: React.DragEvent<HTMLDivElement>, date: string, targetTeamId: string) => {
     const taskId = ev.dataTransfer.getData("task_id");
     const sourceTeamId = ev.dataTransfer.getData("source_team_id");
     const copyToTeam = ev.altKey || ev.dataTransfer.getData("copy_mode") === "1";
+    const grabOffset = parseInt(ev.dataTransfer.getData("grab_day_offset"), 10) || 0;
+    const dropDayIndex = days.findIndex((d) => d.date === date);
+    const startDate = dateAtOffset(dropDayIndex - grabOffset);
     const task = planner.tasks.find((item) => item.id === taskId);
     if (!task) return;
-    onMoveTask(task, date, sourceTeamId, targetTeamId, copyToTeam);
+    dragTaskKeyRef.current = null;
+    setIsDragging(false);
+    onMoveTask(task, startDate, sourceTeamId, targetTeamId, copyToTeam);
   };
 
   const onLaneDragOver = (ev: React.DragEvent<HTMLDivElement>) => {
@@ -415,7 +522,7 @@ export function TimelineGrid({
     const state = resizeStateRef.current;
     if (!state) return;
 
-    const deltaDays = Math.round((clientX - state.startClientX) / DAY_WIDTH);
+    const deltaDays = Math.round((clientX - state.startClientX) / dayWidth);
     let newStartOffset = state.originalStartOffset;
     let newEndOffset = state.originalEndOffset;
 
@@ -436,6 +543,7 @@ export function TimelineGrid({
     ev: React.MouseEvent<HTMLDivElement>,
     task: TaskItem,
     side: "left" | "right",
+    teamId: string,
     startOffset: number,
     endOffset: number
   ) => {
@@ -450,21 +558,358 @@ export function TimelineGrid({
     };
     document.body.style.cursor = "ew-resize";
 
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const state = resizeStateRef.current;
+      if (!state) return;
+      if (moveEvent.buttons === 0) {
+        handleMouseUp(moveEvent);
+        return;
+      }
+      const deltaDays = Math.round((moveEvent.clientX - state.startClientX) / dayWidth);
+      let newStartOffset = state.originalStartOffset;
+      let newEndOffset = state.originalEndOffset;
+      if (state.side === "left") {
+        newStartOffset = Math.max(0, Math.min(state.originalStartOffset + deltaDays, newEndOffset));
+      } else {
+        newEndOffset = Math.min(days.length - 1, Math.max(state.originalEndOffset + deltaDays, newStartOffset));
+      }
+      setResizePreview({
+        taskKey: `${teamId}:${state.task.id}`,
+        startOffset: newStartOffset,
+        endOffset: newEndOffset,
+      });
+    };
+
     const handleMouseUp = (upEvent: MouseEvent) => {
       finishResize(upEvent.clientX);
+      setResizePreview(null);
       document.body.style.cursor = "";
+      window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
 
+    window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const teamById = useMemo(
+    () => new Map(planner.teams.map((t) => [t.id, t])),
+    [planner.teams]
+  );
+
+  const renderTaskCard = (
+    task: TaskItem,
+    teamId: string,
+    startOffset: number,
+    span: number,
+    row: number,
+    fillColor: { bg: string; fg: string }
+  ) => {
+    const team = teamById.get(teamId);
+    const taskKey = `${teamId}:${task.id}`;
+    const isResizingThis = resizePreview?.taskKey === taskKey;
+    const effectiveStartOffset = isResizingThis ? resizePreview.startOffset : startOffset;
+    const effectiveSpan = isResizingThis
+      ? resizePreview.endOffset - resizePreview.startOffset + 1
+      : span;
+    const isSelected =
+      selectedTaskPlacement?.taskId === task.id && selectedTaskPlacement.teamId === teamId;
+    const isRenaming = renamingTaskId === task.id;
+    const assignedNames = (task.assigned_to ?? [])
+      .map((studentId) => planner.members.find((member) => member.id === studentId)?.name)
+      .filter((value): value is string => Boolean(value))
+      .sort((left, right) => left.localeCompare(right));
+    const inTaskTeamMembers = planner.members
+      .filter((member) => member.teams.some((tid) => task.teams.includes(tid)))
+      .sort((left, right) => left.name.localeCompare(right.name));
+    const inTaskTeamIds = new Set(inTaskTeamMembers.map((member) => member.id));
+    const otherMembers = planner.members
+      .filter((member) => !inTaskTeamIds.has(member.id))
+      .sort((left, right) => left.name.localeCompare(right.name));
+    const priority = task.priority ?? "need";
+    const priorityClass =
+      priority === "urgent"
+        ? "task-priority-urgent"
+        : priority === "want"
+          ? "task-priority-want"
+          : "task-priority-need";
+
+    return (
+      <DropdownMenu.Root
+        key={`${teamId}-${task.id}`}
+        modal={false}
+        open={openMenuKey === taskKey && !isRenaming}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            if (menuOpenRequestKeyRef.current === taskKey) {
+              setOpenMenuKey(taskKey);
+            }
+            menuOpenRequestKeyRef.current = null;
+            return;
+          }
+          menuOpenRequestKeyRef.current = null;
+          setOpenMenuKey(null);
+          setMenuAnchorPos(null);
+        }}
+      >
+        <DropdownMenu.Trigger asChild>
+          <span
+            className="task-menu-anchor"
+            aria-hidden="true"
+            style={openMenuKey === taskKey && menuAnchorPos ? menuAnchorPos : undefined}
+          />
+        </DropdownMenu.Trigger>
+        <div
+          className={`task-card ${priorityClass} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""} ${isDragging && dragTaskKeyRef.current !== taskKey ? "drag-passive" : ""}`}
+          draggable={!isRenaming && !resizePreview}
+          onDragStart={(ev) => onDragStart(ev, task.id, teamId)}
+          onDragEnd={onDragEnd}
+          onMouseDown={(ev) => {
+            ev.stopPropagation();
+            if (ev.button === 2) {
+              onSelectTask(task.id, teamId);
+              if (!isRenaming) {
+                setMenuAnchorPos(anchorPosFromEvent(ev));
+                menuOpenRequestKeyRef.current = taskKey;
+                setOpenMenuKey(taskKey);
+              }
+              return;
+            }
+            if (ev.button !== 0) {
+              return;
+            }
+            pointerStateRef.current = {
+              key: taskKey,
+              x: ev.clientX,
+              y: ev.clientY,
+              moved: false,
+            };
+          }}
+          onMouseMove={(ev) => {
+            const pointer = pointerStateRef.current;
+            if (!pointer || pointer.key !== taskKey) {
+              return;
+            }
+            const deltaX = Math.abs(ev.clientX - pointer.x);
+            const deltaY = Math.abs(ev.clientY - pointer.y);
+            if (deltaX >= 1 || deltaY >= 1) {
+              pointerStateRef.current = { ...pointer, moved: true };
+            }
+          }}
+          onMouseUp={(ev) => {
+            ev.stopPropagation();
+            if (ev.button !== 0) {
+              return;
+            }
+            if (dragTaskKeyRef.current === taskKey) {
+              pointerStateRef.current = null;
+              return;
+            }
+            const pointer = pointerStateRef.current;
+            if (!pointer || pointer.key !== taskKey) {
+              pointerStateRef.current = null;
+              return;
+            }
+            if (pointer.moved) {
+              pointerStateRef.current = null;
+              return;
+            }
+            pointerStateRef.current = null;
+            onSelectTask(task.id, teamId);
+            if (!isRenaming) {
+              setMenuAnchorPos(anchorPosFromEvent(ev));
+              menuOpenRequestKeyRef.current = taskKey;
+              setOpenMenuKey(taskKey);
+            }
+            suppressClickUntilRef.current = Date.now() + 120;
+          }}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            if (Date.now() < suppressClickUntilRef.current) {
+              return;
+            }
+            if (dragTaskKeyRef.current === taskKey) {
+              dragTaskKeyRef.current = null;
+              return;
+            }
+            if (
+              pointerStateRef.current?.key !== taskKey ||
+              pointerStateRef.current.moved
+            ) {
+              pointerStateRef.current = null;
+              return;
+            }
+            pointerStateRef.current = null;
+            onSelectTask(task.id, teamId);
+            if (!isRenaming) {
+              setMenuAnchorPos(anchorPosFromEvent(ev));
+              menuOpenRequestKeyRef.current = taskKey;
+              setOpenMenuKey(taskKey);
+            }
+          }}
+          onDoubleClick={(ev) => {
+            ev.stopPropagation();
+            setOpenMenuKey(null);
+            onSelectTask(task.id, teamId);
+            onStartRenameTask(task, teamId);
+          }}
+          onContextMenu={(ev) => {
+            ev.preventDefault();
+          }}
+          title={`Assigned: ${assignedNames.join(", ")}`}
+          style={{
+            top: CARD_TOP + row * (CARD_HEIGHT + ROW_GAP),
+            left: effectiveStartOffset * dayWidth + 2,
+            width: effectiveSpan * dayWidth - 4,
+            backgroundColor: fillColor.bg,
+            color: fillColor.fg
+          }}
+        >
+          <div
+            className="task-resize-handle left"
+            onClick={(ev) => ev.stopPropagation()}
+            onMouseDown={(ev) =>
+              onResizeHandleMouseDown(ev, task, "left", teamId, startOffset, startOffset + span - 1)
+            }
+          />
+          {isRenaming ? (
+            <input
+              className="task-title-input"
+              autoFocus
+              value={renameDraft}
+              onChange={(ev) => onRenameDraftChange(ev.target.value)}
+              onClick={(ev) => ev.stopPropagation()}
+              onKeyDown={(ev) => {
+                ev.stopPropagation();
+                if (ev.key === "Enter") {
+                  ev.preventDefault();
+                  onCommitRename();
+                }
+                if (ev.key === "Escape") {
+                  ev.preventDefault();
+                  onCancelRename();
+                }
+              }}
+              onBlur={() => onCommitRename()}
+            />
+          ) : (
+            <span>{task.title}</span>
+          )}
+          <div
+            className="task-resize-handle right"
+            onClick={(ev) => ev.stopPropagation()}
+            onMouseDown={(ev) =>
+              onResizeHandleMouseDown(ev, task, "right", teamId, startOffset, startOffset + span - 1)
+            }
+          />
+        </div>
+        {!isRenaming && (
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content className="task-menu" sideOffset={6} align="start">
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger className="task-menu-item">
+                  <span className="task-menu-icon"><Users size={14} /></span>
+                  <span style={{ flex: 1 }}>Assign To</span>
+                  <span className="task-menu-icon"><ChevronRight size={14} /></span>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.SubContent className="task-menu" sideOffset={4} alignOffset={-4}>
+                    {inTaskTeamMembers.map((member) => {
+                      const assigned = (task.assigned_to ?? []).includes(member.id);
+                      return (
+                        <DropdownMenu.Item
+                          key={`${task.id}-assign-${member.id}`}
+                          className="task-menu-item"
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            onToggleTaskAssignee(task, member.id);
+                          }}
+                        >
+                          <span className="task-menu-icon">{assigned && <Check size={14} />}</span>
+                          {member.name}
+                        </DropdownMenu.Item>
+                      );
+                    })}
+                    {inTaskTeamMembers.length > 0 && otherMembers.length > 0 && (
+                      <DropdownMenu.Separator className="task-menu-separator" />
+                    )}
+                    {otherMembers.map((member) => {
+                      const assigned = (task.assigned_to ?? []).includes(member.id);
+                      return (
+                        <DropdownMenu.Item
+                          key={`${task.id}-assign-${member.id}`}
+                          className="task-menu-item"
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            onToggleTaskAssignee(task, member.id);
+                          }}
+                        >
+                          <span className="task-menu-icon">{assigned && <Check size={14} />}</span>
+                          {member.name}
+                        </DropdownMenu.Item>
+                      );
+                    })}
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Sub>
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger className="task-menu-item">
+                  <span className="task-menu-icon"><Flag size={14} /></span>
+                  <span style={{ flex: 1 }}>Priority</span>
+                  <span className="task-menu-icon"><ChevronRight size={14} /></span>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.SubContent className="task-menu" sideOffset={4} alignOffset={-4}>
+                    {(["urgent", "need", "want"] as const).map((p) => (
+                      <DropdownMenu.Item
+                        key={`${task.id}-priority-${p}`}
+                        className="task-menu-item"
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          onSetTaskPriority(task, p);
+                        }}
+                      >
+                        <span className="task-menu-icon">{(task.priority ?? "need") === p && <Check size={14} />}</span>
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Sub>
+              <DropdownMenu.Item
+                className="task-menu-item"
+                onSelect={() => {
+                  setOpenMenuKey(null);
+                  onToggleTaskComplete(task);
+                }}
+              >
+                <span className="task-menu-icon">{task.completed && <Check size={14} />}</span>
+                Completed
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="task-menu-item danger"
+                onSelect={() => {
+                  setOpenMenuKey(null);
+                  onDeleteTask(task, team?.id ?? teamId);
+                }}
+              >
+                <span className="task-menu-icon"><Trash2 size={14} /></span>
+                Delete
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        )}
+      </DropdownMenu.Root>
+    );
   };
 
   return (
     <div
-      className="board-wrap"
+      className={`board-wrap ${peopleOnlyMode ? "people-only-mode" : showPeople ? "people-mode" : ""}`}
+      style={{ "--day-width": `${dayWidth}px` } as React.CSSProperties}
       onMouseDown={(event) => {
         const target = event.target as HTMLElement;
-        if (target.closest(".task-card") || target.closest(".task-menu") || target.closest(".task-title-input")) {
+        if (target.closest(".task-card") || target.closest(".task-menu") || target.closest(".task-title-input") || target.closest(".assignment-indicator")) {
           return;
         }
         onClearSelection();
@@ -472,7 +917,7 @@ export function TimelineGrid({
       }}
     >
       <div className="timeline-top-row">
-        <div className="timeline-corner">
+        <div className="timeline-corner" style={{ width: labelWidth }}>
           <img src={logo} alt="Taskbeard logo" className="board-logo" />
         </div>
         <div className="timeline-header-wrap" style={{ width: totalWidth }}>
@@ -502,15 +947,15 @@ export function TimelineGrid({
         </div>
       </div>
 
-      <div className="lanes-stack" style={{ width: totalWidth + 170 }}>
-        <div className="break-overlays" style={{ left: 170, width: totalWidth }}>
+      <div className="lanes-stack" style={{ width: totalWidth + labelWidth }}>
+        <div className="break-overlays" style={{ left: labelWidth, width: totalWidth }}>
           {eventSpans.map((item) => (
             <div
               key={item.id}
               className={`event-block ${item.isSingleDay ? "single-day" : ""}`}
               style={{
-                left: item.startOffset * DAY_WIDTH,
-                width: item.span * DAY_WIDTH,
+                left: item.startOffset * dayWidth,
+                width: item.span * dayWidth,
               }}
             >
               <span>{item.name}</span>
@@ -522,8 +967,8 @@ export function TimelineGrid({
               key={item.id}
               className={`travel-block ${item.isSingleDay ? "single-day" : ""}`}
               style={{
-                left: item.startOffset * DAY_WIDTH,
-                width: item.span * DAY_WIDTH,
+                left: item.startOffset * dayWidth,
+                width: item.span * dayWidth,
               }}
             >
               <span>{item.label}</span>
@@ -535,8 +980,8 @@ export function TimelineGrid({
               key={item.id}
               className="break-block"
               style={{
-                left: item.startOffset * DAY_WIDTH,
-                width: item.span * DAY_WIDTH,
+                left: item.startOffset * dayWidth,
+                width: item.span * dayWidth,
               }}
             >
               <span>{item.name}</span>
@@ -544,15 +989,23 @@ export function TimelineGrid({
           ))}
         </div>
 
-        {laneData.map(({ team, positionedTasks, laneHeight }) => (
-          <div key={team.id} className="lane-row">
-            <div
-              className="lane-label"
-              style={{ borderLeftColor: teamDefaultColor(team, planner.colors).bg, minHeight: laneHeight }}
-            >
-              {team.name}
-            </div>
-            <div className="lane-grid" style={{ width: totalWidth, minHeight: laneHeight, gridTemplateColumns: dayColumns }}>
+        {todayIndex >= 0 && (
+          <div
+            className="today-overlay"
+            style={{
+              left: labelWidth + todayIndex * dayWidth,
+              width: dayWidth,
+            }}
+          />
+        )}
+
+        {!peopleOnlyMode && laneData.map(({ team, positionedTasks, laneHeight }) => {
+          const people = showPeople ? (peopleByTeam.get(team.id) ?? []) : [];
+          const peopleHeight = people.length * PERSON_ROW_HEIGHT;
+          const groupHeight = showPeople ? laneHeight + peopleHeight : laneHeight;
+
+          const taskGridContent = (
+            <>
               {days.map((day) => (
                 <div
                   key={`${team.id}-${day.date}`}
@@ -565,268 +1018,192 @@ export function TimelineGrid({
                 />
               ))}
 
-              {positionedTasks.map(({ task, startOffset, span, row }) => {
-                const taskKey = `${team.id}:${task.id}`;
-                const isSelected =
-                  selectedTaskPlacement?.taskId === task.id && selectedTaskPlacement.teamId === team.id;
-                const isRenaming = renamingTaskId === task.id;
-                const assignedNames = (task.assigned_to ?? [])
-                  .map((studentId) => planner.members.find((member) => member.id === studentId)?.name)
-                  .filter((value): value is string => Boolean(value))
-                  .sort((left, right) => left.localeCompare(right));
-                const inTaskTeamMembers = planner.members
-                  .filter((member) => member.teams.some((teamId) => task.teams.includes(teamId)))
-                  .sort((left, right) => left.name.localeCompare(right.name));
-                const inTaskTeamIds = new Set(inTaskTeamMembers.map((member) => member.id));
-                const otherMembers = planner.members
-                  .filter((member) => !inTaskTeamIds.has(member.id))
-                  .sort((left, right) => left.name.localeCompare(right.name));
-                const priority = task.priority ?? "need";
-                const priorityClass =
-                  priority === "urgent"
-                    ? "task-priority-urgent"
-                    : priority === "want"
-                      ? "task-priority-want"
-                      : "task-priority-need";
-                const fillColor = teamColorAt(team, row, planner.colors);
+              {positionedTasks.map(({ task, startOffset, span, row }) =>
+                renderTaskCard(task, team.id, startOffset, span, row, teamColorAt(team, row, planner.colors))
+              )}
+            </>
+          );
 
-                return (
-                  <DropdownMenu.Root
-                    key={`${team.id}-${task.id}`}
-                    modal={false}
-                    open={openMenuKey === taskKey && !isRenaming}
-                    onOpenChange={(nextOpen) => {
-                      if (nextOpen) {
-                        if (menuOpenRequestKeyRef.current === taskKey) {
-                          setOpenMenuKey(taskKey);
-                        }
-                        menuOpenRequestKeyRef.current = null;
-                        return;
-                      }
-                      menuOpenRequestKeyRef.current = null;
-                      setOpenMenuKey(null);
-                    }}
+          const teamTasks = showPeople
+            ? planner.tasks
+                .filter((t) => t.teams.includes(team.id))
+                .filter((t) => t.start_date >= seasonStart && t.start_date <= seasonEnd)
+            : [];
+
+          if (showPeople && !peopleOnlyMode) {
+            const teamColor = teamDefaultColor(team, planner.colors).bg;
+            return (
+              <div key={team.id} className="lane-group">
+                <div className="lane-task-section">
+                  <div
+                    className="lane-label"
+                    style={{ borderLeftColor: teamColor, width: labelWidth, minHeight: laneHeight }}
                   >
-                    <DropdownMenu.Trigger asChild>
-                      <div
-                        className={`task-card ${priorityClass} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""}`}
-                        draggable={!isRenaming}
-                        onPointerDown={(ev) => {
-                          ev.stopPropagation();
-                        }}
-                        onDragStart={(ev) => onDragStart(ev, task.id, team.id)}
-                        onDragEnd={onDragEnd}
-                        onMouseDown={(ev) => {
-                          ev.stopPropagation();
-                          if (ev.button === 2) {
-                            onSelectTask(task.id, team.id);
-                            if (!isRenaming) {
-                              menuOpenRequestKeyRef.current = taskKey;
-                              setOpenMenuKey(taskKey);
-                            }
-                            return;
-                          }
-                          if (ev.button !== 0) {
-                            return;
-                          }
-                          pointerStateRef.current = {
-                            key: taskKey,
-                            x: ev.clientX,
-                            y: ev.clientY,
-                            moved: false,
-                          };
-                        }}
-                        onMouseMove={(ev) => {
-                          const pointer = pointerStateRef.current;
-                          if (!pointer || pointer.key !== taskKey) {
-                            return;
-                          }
-                          const deltaX = Math.abs(ev.clientX - pointer.x);
-                          const deltaY = Math.abs(ev.clientY - pointer.y);
-                          if (deltaX >= 1 || deltaY >= 1) {
-                            pointerStateRef.current = { ...pointer, moved: true };
-                          }
-                        }}
-                        onMouseUp={(ev) => {
-                          ev.stopPropagation();
-                          if (ev.button !== 0) {
-                            return;
-                          }
-                          if (dragTaskKeyRef.current === taskKey) {
-                            pointerStateRef.current = null;
-                            return;
-                          }
-                          const pointer = pointerStateRef.current;
-                          if (!pointer || pointer.key !== taskKey) {
-                            pointerStateRef.current = null;
-                            return;
-                          }
-                          if (pointer.moved) {
-                            pointerStateRef.current = null;
-                            return;
-                          }
-                          pointerStateRef.current = null;
-                          onSelectTask(task.id, team.id);
-                          if (!isRenaming) {
-                            menuOpenRequestKeyRef.current = taskKey;
-                            setOpenMenuKey(taskKey);
-                          }
-                          suppressClickUntilRef.current = Date.now() + 120;
-                        }}
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          if (Date.now() < suppressClickUntilRef.current) {
-                            return;
-                          }
-                          if (dragTaskKeyRef.current === taskKey) {
-                            dragTaskKeyRef.current = null;
-                            return;
-                          }
-                          if (
-                            pointerStateRef.current?.key !== taskKey ||
-                            pointerStateRef.current.moved
-                          ) {
-                            pointerStateRef.current = null;
-                            return;
-                          }
-                          pointerStateRef.current = null;
-                          onSelectTask(task.id, team.id);
-                          if (!isRenaming) {
-                            menuOpenRequestKeyRef.current = taskKey;
-                            setOpenMenuKey(taskKey);
-                          }
-                        }}
-                        onDoubleClick={(ev) => {
-                          ev.stopPropagation();
-                          setOpenMenuKey(null);
-                          onSelectTask(task.id, team.id);
-                          onStartRenameTask(task, team.id);
-                        }}
-                        onContextMenu={(ev) => {
-                          ev.preventDefault();
-                        }}
-                        title={`Assigned: ${assignedNames.join(", ")}`}
-                        style={{
-                          top: CARD_TOP + row * (CARD_HEIGHT + ROW_GAP),
-                          left: startOffset * DAY_WIDTH + 2,
-                          width: span * DAY_WIDTH - 4,
-                          backgroundColor: fillColor.bg,
-                          color: fillColor.fg
-                        }}
-                      >
+                    {team.name}
+                  </div>
+                  <div className="lane-grid" style={{ width: totalWidth, minHeight: laneHeight, gridTemplateColumns: dayColumns }}>
+                    {taskGridContent}
+                  </div>
+                </div>
+                <div className="lane-people">
+                  {people.map((person) => {
+                    const personTasks = teamTasks.filter((t) =>
+                      (t.assigned_to ?? []).includes(person.id)
+                    );
+                    return (
+                      <div key={person.id} className="person-row">
+                        <div className="person-indent" style={{ borderLeftColor: teamColor }} />
+                        <div className="person-label">{person.name}</div>
                         <div
-                          className="task-resize-handle left"
-                          onClick={(ev) => ev.stopPropagation()}
-                          onMouseDown={(ev) =>
-                            onResizeHandleMouseDown(ev, task, "left", startOffset, startOffset + span - 1)
-                          }
-                        />
-                        {isRenaming ? (
-                          <input
-                            className="task-title-input"
-                            autoFocus
-                            value={renameDraft}
-                            onChange={(ev) => onRenameDraftChange(ev.target.value)}
-                            onClick={(ev) => ev.stopPropagation()}
-                            onKeyDown={(ev) => {
-                              ev.stopPropagation();
-                              if (ev.key === "Enter") {
-                                ev.preventDefault();
-                                onCommitRename();
-                              }
-                              if (ev.key === "Escape") {
-                                ev.preventDefault();
-                                onCancelRename();
-                              }
-                            }}
-                            onBlur={() => onCommitRename()}
-                          />
-                        ) : (
-                          <span>{task.title}</span>
-                        )}
-                        <div
-                          className="task-resize-handle right"
-                          onClick={(ev) => ev.stopPropagation()}
-                          onMouseDown={(ev) =>
-                            onResizeHandleMouseDown(ev, task, "right", startOffset, startOffset + span - 1)
-                          }
-                        />
-                      </div>
-                    </DropdownMenu.Trigger>
-                    {!isRenaming && (
-                      <DropdownMenu.Portal>
-                        <DropdownMenu.Content className="task-menu" sideOffset={6} align="start">
-                          <DropdownMenu.Sub>
-                            <DropdownMenu.SubTrigger className="task-menu-item">
-                              Assign To ▸
-                            </DropdownMenu.SubTrigger>
-                            <DropdownMenu.Portal>
-                              <DropdownMenu.SubContent className="task-menu" sideOffset={4} alignOffset={-4}>
-                                {inTaskTeamMembers.map((member) => {
-                                  const assigned = (task.assigned_to ?? []).includes(member.id);
-                                  return (
-                                    <DropdownMenu.Item
-                                      key={`${task.id}-assign-${member.id}`}
-                                      className="task-menu-item"
-                                      onSelect={(event) => {
-                                        event.preventDefault();
-                                        onToggleTaskAssignee(task, member.id);
-                                      }}
-                                    >
-                                      {assigned ? "✓ " : "  "}
-                                      {member.name}
-                                    </DropdownMenu.Item>
-                                  );
-                                })}
-                                {inTaskTeamMembers.length > 0 && otherMembers.length > 0 && (
-                                  <DropdownMenu.Separator className="task-menu-separator" />
-                                )}
-                                {otherMembers.map((member) => {
-                                  const assigned = (task.assigned_to ?? []).includes(member.id);
-                                  return (
-                                    <DropdownMenu.Item
-                                      key={`${task.id}-assign-${member.id}`}
-                                      className="task-menu-item"
-                                      onSelect={(event) => {
-                                        event.preventDefault();
-                                        onToggleTaskAssignee(task, member.id);
-                                      }}
-                                    >
-                                      {assigned ? "✓ " : "  "}
-                                      {member.name}
-                                    </DropdownMenu.Item>
-                                  );
-                                })}
-                              </DropdownMenu.SubContent>
-                            </DropdownMenu.Portal>
-                          </DropdownMenu.Sub>
-                          <DropdownMenu.Item
-                            className="task-menu-item"
-                            onSelect={() => {
-                              setOpenMenuKey(null);
-                              onToggleTaskComplete(task);
-                            }}
+                            className="person-grid"
+                            style={{ width: totalWidth, gridTemplateColumns: dayColumns }}
                           >
-                            {task.completed ? "✓" : ""} Complete
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item
-                            className="task-menu-item danger"
-                            onSelect={() => {
-                              setOpenMenuKey(null);
-                              onDeleteTask(task, team.id);
-                            }}
-                          >
-                            × Delete
-                          </DropdownMenu.Item>
-                        </DropdownMenu.Content>
-                      </DropdownMenu.Portal>
-                    )}
-                  </DropdownMenu.Root>
-                );
-              })}
+                            {days.map((day) => (
+                              <div
+                                key={`${team.id}-${person.id}-${day.date}`}
+                                className={`person-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                              />
+                            ))}
+                            {personTasks.map((task) => {
+                              const startOffset = Math.max(0, dateDiff(task.start_date, seasonStart));
+                              const endOffset = Math.max(startOffset, dateDiff(task.end_date, seasonStart));
+                              const span = endOffset - startOffset + 1;
+                              const color = taskColorMap.get(`${team.id}:${task.id}`) ?? { bg: "#6b7280", fg: "#fff" };
+                              const indicatorKey = `assign:${team.id}:${task.id}:${person.id}`;
+                              const isIndicatorSelected =
+                                selectedAssignment?.taskId === task.id &&
+                                selectedAssignment?.memberId === person.id;
+
+                              return (
+                                <DropdownMenu.Root
+                                  key={indicatorKey}
+                                  modal={false}
+                                  open={openMenuKey === indicatorKey}
+                                  onOpenChange={(nextOpen) => {
+                                    if (nextOpen) {
+                                      if (menuOpenRequestKeyRef.current === indicatorKey) {
+                                        setOpenMenuKey(indicatorKey);
+                                      }
+                                      menuOpenRequestKeyRef.current = null;
+                                      return;
+                                    }
+                                    menuOpenRequestKeyRef.current = null;
+                                    setOpenMenuKey(null);
+                                    setMenuAnchorPos(null);
+                                  }}
+                                >
+                                  <DropdownMenu.Trigger asChild>
+                                    <span
+                                      className="task-menu-anchor"
+                                      aria-hidden="true"
+                                      style={openMenuKey === indicatorKey && menuAnchorPos ? menuAnchorPos : undefined}
+                                    />
+                                  </DropdownMenu.Trigger>
+                                  <div
+                                    className={`assignment-indicator ${task.completed ? "completed" : ""} ${isIndicatorSelected ? "selected" : ""}`}
+                                    title={task.title}
+                                    style={{
+                                      left: startOffset * dayWidth + 2,
+                                      width: span * dayWidth - 4,
+                                      backgroundColor: color.bg,
+                                    }}
+                                    onMouseDown={(ev) => {
+                                      ev.stopPropagation();
+                                      if (ev.button === 2) {
+                                        onSelectAssignment(task.id, person.id);
+                                        setMenuAnchorPos(anchorPosFromEvent(ev));
+                                        menuOpenRequestKeyRef.current = indicatorKey;
+                                        setOpenMenuKey(indicatorKey);
+                                        return;
+                                      }
+                                      if (ev.button === 0) {
+                                        onSelectAssignment(task.id, person.id);
+                                      }
+                                    }}
+                                    onClick={(ev) => ev.stopPropagation()}
+                                    onContextMenu={(ev) => ev.preventDefault()}
+                                  />
+                                  <DropdownMenu.Portal>
+                                    <DropdownMenu.Content className="task-menu" sideOffset={4} align="start">
+                                      <DropdownMenu.Item
+                                        className="task-menu-item danger"
+                                        onSelect={() => {
+                                          setOpenMenuKey(null);
+                                          onToggleTaskAssignee(task, person.id);
+                                        }}
+                                      >
+                                        <span className="task-menu-icon"><UserMinus size={14} /></span>
+                                        Unassign
+                                      </DropdownMenu.Item>
+                                    </DropdownMenu.Content>
+                                  </DropdownMenu.Portal>
+                                </DropdownMenu.Root>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+          }
+
+          return (
+            <div key={team.id} className="lane-row">
+              <div
+                className="lane-label"
+                style={{ borderLeftColor: teamDefaultColor(team, planner.colors).bg, minHeight: laneHeight }}
+              >
+                {team.name}
+              </div>
+              <div className="lane-grid" style={{ width: totalWidth, minHeight: laneHeight, gridTemplateColumns: dayColumns }}>
+                {taskGridContent}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+
+        {peopleOnlyMode && personLaneData.map(({ person, positionedTasks, laneHeight }) => {
+          const firstTeamId = person.teams[0] ?? planner.teams[0]?.id ?? "";
+          return (
+            <div key={person.id} className="lane-row">
+              <div
+                className="lane-label people-only-label"
+                style={{ minHeight: laneHeight }}
+              >
+                {person.name}
+              </div>
+              <div
+                className="lane-grid"
+                style={{ width: totalWidth, minHeight: laneHeight, gridTemplateColumns: dayColumns }}
+              >
+                {days.map((day) => (
+                  <div
+                    key={`person-${person.id}-${day.date}`}
+                    className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                    onDragOver={onLaneDragOver}
+                    onDrop={(ev) => {
+                      const srcTeam = ev.dataTransfer.getData("source_team_id");
+                      onDrop(ev, day.date, srcTeam || firstTeamId);
+                    }}
+                    onDoubleClick={() => onCreateTaskAt(day.date, firstTeamId)}
+                    title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
+                    style={{ minHeight: laneHeight }}
+                  />
+                ))}
+                {positionedTasks.map(({ task, startOffset, span, row }) => {
+                  const taskTeam = planner.teams.find((t) => task.teams.includes(t.id));
+                  const effectiveTeamId = taskTeam?.id ?? firstTeamId;
+                  const fillColor = taskTeam
+                    ? teamColorAt(taskTeam, row, planner.colors)
+                    : { bg: "#6b7280", fg: "#fff" };
+                  return renderTaskCard(task, effectiveTeamId, startOffset, span, row, fillColor);
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

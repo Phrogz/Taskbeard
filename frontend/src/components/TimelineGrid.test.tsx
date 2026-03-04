@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { TimelineGrid } from "./TimelineGrid";
 import type { PlannerPayload, TaskItem } from "../services/plannerApi";
@@ -53,9 +53,11 @@ function renderGrid(
     onMoveTask: vi.fn(),
     onResizeTask: vi.fn(),
     onToggleTaskComplete: vi.fn(),
+    onSetTaskPriority: vi.fn(),
     onToggleTaskAssignee: vi.fn(),
     onDeleteTask: vi.fn(),
     onSelectTask: vi.fn(),
+    onSelectAssignment: vi.fn(),
     onClearSelection: vi.fn(),
     onStartRenameTask: vi.fn(),
     onRenameDraftChange: vi.fn(),
@@ -68,9 +70,13 @@ function renderGrid(
   const view = render(
     <TimelineGrid
       planner={plannerOverride}
+      showTeams={true}
+      showPeople={false}
       selectedTaskPlacement={null}
+      selectedAssignment={null}
       renamingTaskId={null}
       renameDraft=""
+      dayWidth={35}
       {...handlers}
     />
   );
@@ -143,6 +149,33 @@ describe("TimelineGrid drag interactions", () => {
 
     expect(handlers.onMoveTask).toHaveBeenCalledTimes(1);
     expect(handlers.onMoveTask).toHaveBeenCalledWith(task, "2026-03-03", "team-a", "team-a", false);
+  });
+
+  it("applies drag-passive to non-dragged cards so they don't block drop targets", () => {
+    const twoTaskPlanner: PlannerPayload = {
+      ...planner,
+      tasks: [
+        task,
+        { ...task, id: "task-2", title: "Design bot", start_date: "2026-03-02", end_date: "2026-03-03" },
+      ],
+    };
+    const { container } = renderGrid({}, twoTaskPlanner);
+    const dataTransfer = mockDataTransfer();
+
+    const cards = container.querySelectorAll(".task-card");
+    const card1 = Array.from(cards).find((c) => c.textContent?.includes("Build bot"))!;
+    const card2 = Array.from(cards).find((c) => c.textContent?.includes("Design bot"))!;
+
+    expect(card1).not.toHaveClass("drag-passive");
+    expect(card2).not.toHaveClass("drag-passive");
+
+    fireEvent.dragStart(card1, { dataTransfer, altKey: false });
+    expect(card1).not.toHaveClass("drag-passive");
+    expect(card2).toHaveClass("drag-passive");
+
+    fireEvent.dragEnd(card1);
+    expect(card1).not.toHaveClass("drag-passive");
+    expect(card2).not.toHaveClass("drag-passive");
   });
 
   it("does not open the context menu when drag starts before mousemove threshold", () => {
@@ -245,6 +278,37 @@ describe("TimelineGrid drag interactions", () => {
     expect(monday).toHaveClass("override");
   });
 
+  it("drop uses the left edge of the task, not the mouse position, as start date", () => {
+    const widerPlanner: PlannerPayload = {
+      ...planner,
+      season: { start_date: "2026-03-01", end_date: "2026-03-07", timezone: "America/Los_Angeles" },
+      tasks: [{ ...task, start_date: "2026-03-01", end_date: "2026-03-03" }],
+      dates: [
+        { date: "2026-03-01", past: false, is_today: false, weekday: "Sun" },
+        { date: "2026-03-02", past: false, is_today: false, weekday: "Mon" },
+        { date: "2026-03-03", past: false, is_today: false, weekday: "Tue" },
+        { date: "2026-03-04", past: false, is_today: false, weekday: "Wed" },
+        { date: "2026-03-05", past: false, is_today: false, weekday: "Thu" },
+        { date: "2026-03-06", past: false, is_today: false, weekday: "Fri" },
+        { date: "2026-03-07", past: false, is_today: false, weekday: "Sat" },
+      ],
+    };
+    const { container, taskCard, handlers } = renderGrid({}, widerPlanner);
+    const dataTransfer = mockDataTransfer();
+    const dayCells = container.querySelectorAll(".lane-row .lane-day");
+    const targetDay = dayCells[5] as HTMLDivElement; // Mar 6 (Fri)
+
+    fireEvent.dragStart(taskCard, { dataTransfer, altKey: false });
+    dataTransfer.setData("grab_day_offset", "1");
+
+    fireEvent.dragOver(targetDay, { dataTransfer, altKey: false });
+    fireEvent.drop(targetDay, { dataTransfer, altKey: false });
+
+    expect(handlers.onMoveTask).toHaveBeenCalledTimes(1);
+    const startDateArg = handlers.onMoveTask.mock.calls[0][1];
+    expect(startDateArg).toBe("2026-03-05");
+  });
+
   it("uses the same explicit grid-template columns for header and lane grids", () => {
     const { container } = renderGrid();
     const header = container.querySelector(".timeline-header") as HTMLDivElement | null;
@@ -256,5 +320,134 @@ describe("TimelineGrid drag interactions", () => {
 
     expect(header.style.gridTemplateColumns).toBe("repeat(3, 35px)");
     expect(laneGrid.style.gridTemplateColumns).toBe("repeat(3, 35px)");
+  });
+
+  it("positions the menu anchor at the mouse location on right-click", async () => {
+    const { taskCard, container } = renderGrid();
+    const anchor = container.querySelector(".task-menu-anchor") as HTMLElement | null;
+    if (!anchor) throw new Error("Expected task-menu-anchor to exist");
+
+    fireEvent.mouseDown(taskCard, { button: 2, clientX: 200, clientY: 150 });
+    await screen.findByText("Complete");
+
+    expect(anchor.style.left).toBeTruthy();
+    expect(anchor.style.top).toBeTruthy();
+  });
+
+  it("positions the menu anchor at the mouse location on left-click-release", async () => {
+    const { taskCard, container } = renderGrid();
+    const anchor = container.querySelector(".task-menu-anchor") as HTMLElement | null;
+    if (!anchor) throw new Error("Expected task-menu-anchor to exist");
+
+    fireEvent.mouseDown(taskCard, { button: 0, clientX: 180, clientY: 120 });
+    fireEvent.mouseUp(taskCard, { button: 0, clientX: 180, clientY: 120 });
+    await screen.findByText("Complete");
+
+    expect(anchor.style.left).toBeTruthy();
+    expect(anchor.style.top).toBeTruthy();
+  });
+
+  it("should update task width live while dragging the right resize handle to shrink", () => {
+    const widerTask: TaskItem = {
+      ...task,
+      start_date: "2026-03-01",
+      end_date: "2026-03-03",
+      est_hours: 9,
+    };
+    const widerPlanner: PlannerPayload = {
+      ...planner,
+      season: { start_date: "2026-03-01", end_date: "2026-03-05", timezone: "America/Los_Angeles" },
+      tasks: [widerTask],
+      dates: [
+        { date: "2026-03-01", past: false, is_today: false, weekday: "Sun" },
+        { date: "2026-03-02", past: false, is_today: false, weekday: "Mon" },
+        { date: "2026-03-03", past: false, is_today: false, weekday: "Tue" },
+        { date: "2026-03-04", past: false, is_today: false, weekday: "Wed" },
+        { date: "2026-03-05", past: false, is_today: false, weekday: "Thu" },
+      ],
+    };
+
+    const { container, handlers } = renderGrid({}, widerPlanner);
+    const rightHandle = container.querySelector(".task-resize-handle.right") as HTMLDivElement;
+    const taskCard = container.querySelector(".task-card") as HTMLDivElement;
+
+    // Original width: 3 days × 35px − 4px = 101px
+    expect(taskCard.style.width).toBe("101px");
+
+    // Start resize from the right edge
+    fireEvent.mouseDown(rightHandle, { clientX: 200, button: 0 });
+
+    // Drag one day to the left — width should update live
+    act(() => {
+      window.dispatchEvent(new MouseEvent("mousemove", { clientX: 165, buttons: 1, bubbles: true }));
+    });
+    expect(taskCard.style.width).toBe("66px");
+
+    // Release — should commit the shorter range
+    act(() => {
+      window.dispatchEvent(new MouseEvent("mouseup", { clientX: 165, bubbles: true }));
+    });
+    expect(handlers.onResizeTask).toHaveBeenCalledWith(
+      widerTask,
+      "2026-03-01",
+      "2026-03-02",
+      expect.any(Number)
+    );
+  });
+
+  it("should finish resize when mousemove detects button already released", () => {
+    const widerTask: TaskItem = {
+      ...task,
+      start_date: "2026-03-01",
+      end_date: "2026-03-03",
+      est_hours: 9,
+    };
+    const widerPlanner: PlannerPayload = {
+      ...planner,
+      season: { start_date: "2026-03-01", end_date: "2026-03-05", timezone: "America/Los_Angeles" },
+      tasks: [widerTask],
+      dates: [
+        { date: "2026-03-01", past: false, is_today: false, weekday: "Sun" },
+        { date: "2026-03-02", past: false, is_today: false, weekday: "Mon" },
+        { date: "2026-03-03", past: false, is_today: false, weekday: "Tue" },
+        { date: "2026-03-04", past: false, is_today: false, weekday: "Wed" },
+        { date: "2026-03-05", past: false, is_today: false, weekday: "Thu" },
+      ],
+    };
+
+    const { container, handlers } = renderGrid({}, widerPlanner);
+    const rightHandle = container.querySelector(".task-resize-handle.right") as HTMLDivElement;
+
+    fireEvent.mouseDown(rightHandle, { clientX: 200, button: 0 });
+
+    // mousemove with buttons=0 means the button was released outside the element
+    act(() => {
+      window.dispatchEvent(new MouseEvent("mousemove", { clientX: 165, buttons: 0, bubbles: true }));
+    });
+
+    expect(handlers.onResizeTask).toHaveBeenCalledWith(
+      widerTask,
+      "2026-03-01",
+      "2026-03-02",
+      expect.any(Number)
+    );
+  });
+
+  it("applies completed class to completed task cards", () => {
+    const completedPlanner: PlannerPayload = {
+      ...planner,
+      tasks: [
+        { ...task, completed: true },
+        { ...task, id: "task-2", title: "Wire bot", start_date: "2026-03-02", end_date: "2026-03-03", completed: false },
+      ],
+    };
+
+    const { container } = renderGrid({}, completedPlanner);
+    const cards = container.querySelectorAll(".task-card");
+    const completedCard = Array.from(cards).find((c) => c.textContent?.includes("Build bot"))!;
+    const activeCard = Array.from(cards).find((c) => c.textContent?.includes("Wire bot"))!;
+
+    expect(completedCard).toHaveClass("completed");
+    expect(activeCard).not.toHaveClass("completed");
   });
 });

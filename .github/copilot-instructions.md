@@ -27,7 +27,7 @@
 
 ## Critical Workflows
 - Install deps: `uv sync` (root) and `npm install` (in `frontend/` if needed).
-- Run both servers with process management: `uv run start`; stop with `uv run stop`; restart with `uv run restart` (implemented in `main.py`).
+- Run both servers with process management: `taskbeard start`; stop with `taskbeard stop`; restart with `taskbeard restart` (implemented in `main.py`).
 - Backend-only run: `uv run uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000`.
 - Tests: `uv run pytest` for backend, `npm test` in `frontend/` for Vitest.
 
