@@ -61,6 +61,7 @@ export function App() {
   const [selectedAssignment, setSelectedAssignment] = useState<{ taskId: string; memberId: string } | null>(null);
   const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+  const [dayWidth, setDayWidth] = useState(35);
   const [undoStack, setUndoStack] = useState<TaskItem[][]>([]);
   const [redoStack, setRedoStack] = useState<TaskItem[][]>([]);
 
@@ -566,6 +567,24 @@ export function App() {
         <button className={tab === "config" ? "active" : ""} onClick={() => setTab("config")}>
           Config
         </button>
+        {tab === "tasks" && (
+          <div className="zoom-controls">
+            <button
+              className="zoom-btn"
+              onClick={() => setDayWidth((w) => Math.max(10, w - 1))}
+              aria-label="Narrow day columns"
+            >
+              &minus;
+            </button>
+            <button
+              className="zoom-btn"
+              onClick={() => setDayWidth((w) => w + 1)}
+              aria-label="Widen day columns"
+            >
+              +
+            </button>
+          </div>
+        )}
       </nav>
 
       {tab === "tasks" ? (
@@ -573,6 +592,7 @@ export function App() {
           planner={planner}
           showTeams={showTeams}
           showPeople={showPeople}
+          dayWidth={dayWidth}
           onMoveTask={onMoveTask}
           onResizeTask={onResizeTask}
           onToggleTaskComplete={onToggleTaskComplete}

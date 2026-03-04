@@ -131,8 +131,8 @@ tasks:
   priority: urgent
 - id: robot-cart
   title: Robot Cart
-  start_date: '2026-02-22'
-  end_date: '2026-02-24'
+  start_date: '2026-03-24'
+  end_date: '2026-03-29'
   est_hours: 8
   completed: false
   teams: build
@@ -141,19 +141,19 @@ tasks:
   priority: want
 - id: build-attach-intake
   title: Build + Attach Intake
-  start_date: '2026-02-17'
-  end_date: '2026-02-23'
-  est_hours: 6
+  start_date: '2026-02-22'
+  end_date: '2026-03-04'
+  est_hours: 22
   completed: true
   teams: build
   depends_on:
-  assigned_to:
+  assigned_to: [lachlan, colin]
   priority: urgent
 - id: attach-shooter
   title: Attach Shooter
-  start_date: '2026-02-27'
-  end_date: '2026-03-01'
-  est_hours: 4
+  start_date: '2026-03-01'
+  end_date: '2026-03-03'
+  est_hours: 8
   completed: false
   teams: build
   depends_on:
@@ -223,16 +223,17 @@ tasks:
   title: Current Limiting
   start_date: '2026-02-26'
   end_date: '2026-03-01'
-  est_hours: 3
+  est_hours: 4
   completed: false
   teams: code
   depends_on:
   assigned_to: eli
   priority: want
+  description: ''
 - id: cool-led-effects
   title: Cool LED Effects
-  start_date: '2026-02-24'
-  end_date: '2026-02-28'
+  start_date: '2026-03-31'
+  end_date: '2026-04-02'
   est_hours: 6
   completed: false
   teams: [code, electrical]
@@ -241,8 +242,8 @@ tasks:
   priority: want
 - id: ar-simulation
   title: Augmented Reality Simulation
-  start_date: '2026-02-28'
-  end_date: '2026-03-08'
+  start_date: '2026-03-29'
+  end_date: '2026-03-31'
   est_hours: 8
   completed: false
   teams: code
@@ -481,7 +482,7 @@ tasks:
   end_date: '2026-02-23'
   est_hours: 12
   depends_on:
-  assigned_to:
+  assigned_to: [colin, grady, hayden]
   completed: false
   priority: need
 - id: current-limiting-2
@@ -518,8 +519,8 @@ tasks:
   completed: false
   priority: need
   description: Ensure the vision system works with AprilTags, providing better localization.
-- id: use-cancoders-for-shooter
-  title: Use CANcoders for shooter
+- id: cancoders-for-shooter
+  title: CANcoders for shooter
   teams: code
   start_date: '2026-03-22'
   end_date: '2026-03-23'

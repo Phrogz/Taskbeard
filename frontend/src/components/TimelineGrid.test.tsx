@@ -110,7 +110,7 @@ describe("TimelineGrid drag interactions", () => {
     fireEvent.mouseDown(taskCard, { button: 0, clientX: 100, clientY: 40 });
 
     expect(handlers.onSelectTask).not.toHaveBeenCalled();
-    expect(screen.queryByText("Complete")).not.toBeInTheDocument();
+    expect(screen.queryByText("Completed")).not.toBeInTheDocument();
   });
 
   it("right-mousedown opens the context menu", async () => {
@@ -119,7 +119,7 @@ describe("TimelineGrid drag interactions", () => {
     fireEvent.mouseDown(taskCard, { button: 2, clientX: 100, clientY: 40 });
 
     expect(handlers.onSelectTask).toHaveBeenCalledWith("task-1", "team-a");
-    expect(await screen.findByText("Complete")).toBeInTheDocument();
+    expect(await screen.findByText("Completed")).toBeInTheDocument();
   });
 
   it("left-mousedown + no movement + left-mouseup opens the context menu", async () => {
@@ -129,7 +129,7 @@ describe("TimelineGrid drag interactions", () => {
     fireEvent.mouseUp(taskCard, { button: 0, clientX: 100, clientY: 40 });
 
     expect(handlers.onSelectTask).toHaveBeenCalledWith("task-1", "team-a");
-    expect(await screen.findByText("Complete")).toBeInTheDocument();
+    expect(await screen.findByText("Completed")).toBeInTheDocument();
   });
 
   it("left-mousedown + mousemove drags the task", () => {
@@ -195,7 +195,7 @@ describe("TimelineGrid drag interactions", () => {
 
     expect(handlers.onMoveTask).toHaveBeenCalledTimes(1);
     expect(handlers.onSelectTask).not.toHaveBeenCalled();
-    expect(screen.queryByText("Complete")).not.toBeInTheDocument();
+    expect(screen.queryByText("Completed")).not.toBeInTheDocument();
   });
 
   it("does not open the task context menu after a click+drag gesture", async () => {
@@ -208,7 +208,7 @@ describe("TimelineGrid drag interactions", () => {
 
     await waitFor(() => {
       expect(handlers.onSelectTask).not.toHaveBeenCalled();
-      expect(screen.queryByText("Complete")).not.toBeInTheDocument();
+      expect(screen.queryByText("Completed")).not.toBeInTheDocument();
     });
   });
 
@@ -328,7 +328,7 @@ describe("TimelineGrid drag interactions", () => {
     if (!anchor) throw new Error("Expected task-menu-anchor to exist");
 
     fireEvent.mouseDown(taskCard, { button: 2, clientX: 200, clientY: 150 });
-    await screen.findByText("Complete");
+    await screen.findByText("Completed");
 
     expect(anchor.style.left).toBeTruthy();
     expect(anchor.style.top).toBeTruthy();
@@ -341,7 +341,7 @@ describe("TimelineGrid drag interactions", () => {
 
     fireEvent.mouseDown(taskCard, { button: 0, clientX: 180, clientY: 120 });
     fireEvent.mouseUp(taskCard, { button: 0, clientX: 180, clientY: 120 });
-    await screen.findByText("Complete");
+    await screen.findByText("Completed");
 
     expect(anchor.style.left).toBeTruthy();
     expect(anchor.style.top).toBeTruthy();
@@ -431,6 +431,37 @@ describe("TimelineGrid drag interactions", () => {
       "2026-03-02",
       expect.any(Number)
     );
+  });
+
+  it("should place a lower-priority task in a gap between higher-priority tasks on row 0", () => {
+    const gapPlanner: PlannerPayload = {
+      ...planner,
+      season: { start_date: "2026-03-01", end_date: "2026-03-08", timezone: "America/Los_Angeles" },
+      tasks: [
+        { ...task, id: "need-a", title: "Need A", priority: "need", start_date: "2026-03-01", end_date: "2026-03-03" },
+        { ...task, id: "need-b", title: "Need B", priority: "need", start_date: "2026-03-07", end_date: "2026-03-08" },
+        { ...task, id: "want-c", title: "Want C", priority: "want", start_date: "2026-03-04", end_date: "2026-03-06" },
+      ],
+      dates: [
+        { date: "2026-03-01", past: false, is_today: false, weekday: "Sun" },
+        { date: "2026-03-02", past: false, is_today: false, weekday: "Mon" },
+        { date: "2026-03-03", past: false, is_today: false, weekday: "Tue" },
+        { date: "2026-03-04", past: false, is_today: false, weekday: "Wed" },
+        { date: "2026-03-05", past: false, is_today: false, weekday: "Thu" },
+        { date: "2026-03-06", past: false, is_today: false, weekday: "Fri" },
+        { date: "2026-03-07", past: false, is_today: false, weekday: "Sat" },
+        { date: "2026-03-08", past: false, is_today: false, weekday: "Sun" },
+      ],
+    };
+
+    const { container } = renderGrid({}, gapPlanner);
+    const cards = container.querySelectorAll(".task-card");
+    const needACard = Array.from(cards).find((c) => c.textContent?.includes("Need A")) as HTMLDivElement;
+    const needBCard = Array.from(cards).find((c) => c.textContent?.includes("Need B")) as HTMLDivElement;
+    const wantCCard = Array.from(cards).find((c) => c.textContent?.includes("Want C")) as HTMLDivElement;
+
+    expect(needACard.style.top).toBe(needBCard.style.top);
+    expect(wantCCard.style.top).toBe(needACard.style.top);
   });
 
   it("applies completed class to completed task cards", () => {

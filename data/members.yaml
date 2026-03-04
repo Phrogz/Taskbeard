@@ -1,73 +1,70 @@
 members:
-  - id: andy
-    name: Andy
-    teams: [business]
-  - id: oliver-p
-    name: Oliver P.
-    teams: [business]
-  - id: colin
-    name: Colin
-    teams: [admin]
-  - id: grady
-    name: Grady
-    teams: [build]
-  - id: alexander
-    name: Alexander
-    teams: [build]
-  - id: stark
-    name: Stark
-    teams: [build]
-  - id: owen
-    name: Owen
-    teams: [build]
-  - id: carter
-    name: Carter
-    teams: [build]
-  - id: sam
-    name: Sam
-    teams: [build]
-  - id: ralph
-    name: Ralph
-    teams: [code]
-  - id: connor
-    name: Connor
-    teams: [build]
-  # - id: graham
-  #   name: Graham
-  #   teams: [build]
-  - id: canon
-    name: Canon
-    teams: [build]
-  - id: kai
-    name: Kai
-    teams: [build]
-  - id: lachlan
-    name: Lachlan
-    teams: [build]
-  - id: hayden
-    name: Hayden
-    teams: [cad]
-  - id: clara
-    name: Clara
-    teams: [electrical]
-  - id: sterling
-    name: Sterling
-    teams: [code]
-  - id: maggie
-    name: Maggie
-    teams: [code]
-  - id: eli
-    name: Eli
-    teams: [code]
-  - id: badri
-    name: Badri
-    teams: [code]
-  - id: oliver-j
-    name: Oliver J.
-    teams: [code]
-  - id: zach
-    name: Zach
-    teams: [build]
-  - id: coach-rider
-    name: Coach Rider
-    teams: [admin]
+- id: andy
+  name: Andy
+  teams: business
+- id: oliver-p
+  name: Oliver P.
+  teams: business
+- id: colin
+  name: Colin
+  teams: [admin, build, cad]
+- id: grady
+  name: Grady
+  teams: [cad, build]
+- id: alexander
+  name: Alexander
+  teams: build
+- id: stark
+  name: Stark
+  teams: build
+- id: owen
+  name: Owen
+  teams: build
+- id: carter
+  name: Carter
+  teams: build
+- id: sam
+  name: Sam
+  teams: build
+- id: ralph
+  name: Ralph
+  teams: code
+- id: connor
+  name: Connor
+  teams: build
+- id: canon
+  name: Canon
+  teams: build
+- id: kai
+  name: Kai
+  teams: build
+- id: lachlan
+  name: Lachlan
+  teams: build
+- id: hayden
+  name: Hayden
+  teams: cad
+- id: clara
+  name: Clara
+  teams: electrical
+- id: sterling
+  name: Sterling
+  teams: code
+- id: maggie
+  name: Maggie
+  teams: code
+- id: eli
+  name: Eli
+  teams: code
+- id: badri
+  name: Badri
+  teams: code
+- id: oliver-j
+  name: Oliver J.
+  teams: code
+- id: zach
+  name: Zach
+  teams: build
+- id: coach-rider
+  name: Coach Rider
+  teams: admin

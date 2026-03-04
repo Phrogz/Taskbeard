@@ -48,7 +48,7 @@ const CARD_BOTTOM = 2;
 const ROW_GAP = 1;
 const TEAM_LABEL_WIDTH = 170;
 const PERSON_LABEL_WIDTH = 100;
-const PERSON_ROW_HEIGHT = 26;
+const PERSON_ROW_HEIGHT = 20;
 
 function dateDiff(a: string, b: string): number {
   const aMs = new Date(`${a}T00:00:00`).getTime();
@@ -64,6 +64,8 @@ type PositionedTask = {
   row: number;
 };
 
+const PRIORITY_RANK: Record<string, number> = { urgent: 0, need: 1, want: 2 };
+
 function positionLaneTasks(tasks: TaskItem[], seasonStart: string): { items: PositionedTask[]; rowCount: number } {
   const intervals = tasks
     .map((task) => {
@@ -77,27 +79,31 @@ function positionLaneTasks(tasks: TaskItem[], seasonStart: string): { items: Pos
       };
     })
     .sort((a, b) => {
+      const pa = PRIORITY_RANK[a.task.priority] ?? 1;
+      const pb = PRIORITY_RANK[b.task.priority] ?? 1;
+      if (pa !== pb) return pa - pb;
       if (a.startOffset !== b.startOffset) return a.startOffset - b.startOffset;
-      if (a.endOffset !== b.endOffset) return a.endOffset - b.endOffset;
+      if (a.span !== b.span) return b.span - a.span;
       return a.task.title.localeCompare(b.task.title);
     });
 
-  const rowEndOffsets: number[] = [];
+  const rowIntervals: Array<Array<{ start: number; end: number }>> = [];
   const positioned: PositionedTask[] = [];
 
   intervals.forEach((interval) => {
-    let rowIndex = rowEndOffsets.findIndex((endOffset) => interval.startOffset > endOffset);
+    let rowIndex = rowIntervals.findIndex(
+      (row) => !row.some((existing) => interval.startOffset <= existing.end && interval.endOffset >= existing.start)
+    );
     if (rowIndex === -1) {
-      rowIndex = rowEndOffsets.length;
-      rowEndOffsets.push(interval.endOffset);
-    } else {
-      rowEndOffsets[rowIndex] = interval.endOffset;
+      rowIndex = rowIntervals.length;
+      rowIntervals.push([]);
     }
+    rowIntervals[rowIndex].push({ start: interval.startOffset, end: interval.endOffset });
 
     positioned.push({ ...interval, row: rowIndex });
   });
 
-  return { items: positioned, rowCount: Math.max(rowEndOffsets.length, 1) };
+  return { items: positioned, rowCount: Math.max(rowIntervals.length, 1) };
 }
 
 export function TimelineGrid({
@@ -756,7 +762,7 @@ export function TimelineGrid({
           onContextMenu={(ev) => {
             ev.preventDefault();
           }}
-          title={`Assigned: ${assignedNames.join(", ")}`}
+          title={`${task.title}\nAssigned: ${assignedNames.join(", ")}`}
           style={{
             top: CARD_TOP + row * (CARD_HEIGHT + ROW_GAP),
             left: effectiveStartOffset * dayWidth + 2,

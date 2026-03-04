@@ -44,4 +44,5 @@
 - [x] Clean up task IDs: replace ugly auto-generated IDs (e.g. `task-mmau3qar-kgr3oc`) with title-derived slugs; keep human-readable IDs; regenerate ID on rename and update `depends_on` references. Compact YAML serialization: empty list → `foo: ` (null), single → `foo: bar`, multiple → `foo: [bar, baz]`; reading supports all forms including `foo: []`.
 - [x] Add icons for all context menu items, or empty spacing where a checkbox is possible but not present, to keep them all aligned.
 - [x] I cannot drag the right side of a task to the left to make it take fewer days. When I drag the right side of a task, it should move live during dragging, updating width with each day that the mouse has moved, not only when I release the drag.
-- [ ] Add +/- buttons at the right side above the Timeline, when the Timeline is visible, which adjust the width of day columns by 1px with each push.
+- [x] Add +/- buttons at the right side above the Timeline, when the Timeline is visible, which adjust the width of day columns by 1px with each push.
+- [x] When a task it too narrow for its text, it currently wraps and increases the task card too high. Use a fixed height for task cards, and if they overflow show …, and put the full name of the task as the first line in the tooltip for the task.

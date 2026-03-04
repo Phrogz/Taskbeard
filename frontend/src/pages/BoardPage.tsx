@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { TimelineGrid } from "../components/TimelineGrid";
 import type { PlannerPayload, TaskItem } from "../services/plannerApi";
 import { teamDefaultColor } from "../services/teamColors";
@@ -36,6 +36,7 @@ type Props = {
   onCommitRename: () => void;
   onCancelRename: () => void;
   onCreateTaskAt: (startDate: string, teamId: string) => void;
+  dayWidth: number;
 };
 
 export function BoardPage({
@@ -60,8 +61,8 @@ export function BoardPage({
   onCommitRename,
   onCancelRename,
   onCreateTaskAt,
+  dayWidth,
 }: Props) {
-  const [dayWidth, setDayWidth] = useState(35);
 
   const warningByTask = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -75,22 +76,6 @@ export function BoardPage({
 
   return (
     <div className="board-page">
-      <div className="zoom-controls">
-        <button
-          className="zoom-btn"
-          onClick={() => setDayWidth((w) => Math.max(10, w - 1))}
-          aria-label="Narrow day columns"
-        >
-          &minus;
-        </button>
-        <button
-          className="zoom-btn"
-          onClick={() => setDayWidth((w) => w + 1)}
-          aria-label="Widen day columns"
-        >
-          +
-        </button>
-      </div>
       <div className="board-main">
         <TimelineGrid
           planner={planner}
