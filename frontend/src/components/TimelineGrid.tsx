@@ -48,7 +48,6 @@ const CARD_TOP = 2;
 const CARD_BOTTOM = 2;
 const ROW_GAP = 1;
 const TEAM_LABEL_WIDTH = 120;
-const PERSON_LABEL_WIDTH = 100;
 const PERSON_ROW_HEIGHT = 20;
 
 function dateDiff(a: string, b: string): number {
@@ -312,11 +311,7 @@ export function TimelineGrid({
     });
   }, [peopleOnlyMode, planner.members, planner.tasks, seasonStart, seasonEnd]);
 
-  const labelWidth = peopleOnlyMode
-    ? TEAM_LABEL_WIDTH
-    : showPeople
-      ? PERSON_ROW_HEIGHT + PERSON_LABEL_WIDTH
-      : TEAM_LABEL_WIDTH;
+  const labelWidth = TEAM_LABEL_WIDTH;
 
   const peopleByTeam = useMemo(() => {
     if (!showPeople) return new Map<string, typeof planner.members>();
@@ -919,7 +914,7 @@ export function TimelineGrid({
   return (
     <div
       className={`board-wrap ${peopleOnlyMode ? "people-only-mode" : showPeople ? "people-mode" : ""}`}
-      style={{ "--day-width": `${dayWidth}px` } as React.CSSProperties}
+      style={{ "--day-width": `${dayWidth}px`, "--label-width": `${labelWidth}px` } as React.CSSProperties}
       onMouseDown={(event) => {
         const target = event.target as HTMLElement;
         if (target.closest(".task-card") || target.closest(".task-menu") || target.closest(".task-title-input") || target.closest(".assignment-indicator")) {
@@ -930,7 +925,7 @@ export function TimelineGrid({
       }}
     >
       <div className="timeline-top-row">
-        <div className="timeline-corner" style={{ width: labelWidth }}>
+        <div className="timeline-corner">
           <img src={logo} alt="Taskbeard logo" className="board-logo" />
         </div>
         <div className="timeline-header-wrap" style={{ width: totalWidth }}>
@@ -1050,7 +1045,7 @@ export function TimelineGrid({
                 <div className="lane-task-section">
                   <div
                     className="lane-label"
-                    style={{ borderLeftColor: teamColor, width: labelWidth, minHeight: laneHeight }}
+                    style={{ borderLeftColor: teamColor, minHeight: laneHeight }}
                   >
                     {team.name}
                   </div>
@@ -1065,8 +1060,10 @@ export function TimelineGrid({
                     );
                     return (
                       <div key={person.id} className="person-row">
-                        <div className="person-indent" style={{ borderLeftColor: teamColor }} />
-                        <div className="person-label">{person.name}</div>
+                        <div className="person-label-area">
+                          <div className="person-indent" style={{ borderLeftColor: teamColor }} />
+                          <div className="person-label">{person.name}</div>
+                        </div>
                         <div
                             className="person-grid"
                             style={{ width: totalWidth, gridTemplateColumns: dayColumns }}
