@@ -60,6 +60,16 @@ def get_config(name: str, request: Request):
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{name}/yaml")
+def get_config_yaml(name: str, request: Request):
+    store = request.app.state.store
+    rel_path = _resolve_rel_path(name)
+    try:
+        return {"yaml_text": store.read_raw(rel_path)}
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.put("/{name}")
 async def put_config(name: str, payload: dict[str, Any], request: Request):
     store = request.app.state.store

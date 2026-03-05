@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { dump, load } from "js-yaml";
+import { useEffect, useMemo, useState } from "react";
+import { load } from "js-yaml";
 import type { PlannerPayload } from "../services/plannerApi";
-import { putConfigYaml } from "../services/plannerApi";
+import { getConfigYaml, putConfigYaml } from "../services/plannerApi";
 
 type Props = {
   planner: PlannerPayload;
@@ -30,21 +30,6 @@ const CONFIG_DOCS: ConfigDoc[] = [
   { key: "tasks", title: "Tasks" },
 ];
 
-function toYamlText(payload: unknown): string {
-  return dump(payload, { sortKeys: false, lineWidth: 120 });
-}
-
-function buildInitialDocs(planner: PlannerPayload): Record<ConfigKey, string> {
-  return {
-    season: toYamlText({ season: planner.season, events: planner.events, breaks: planner.breaks }),
-    practices: toYamlText(planner.practices),
-    teams: toYamlText({ teams: planner.teams }),
-    colors: toYamlText({ colors: planner.colors }),
-    members: toYamlText({ members: planner.members }),
-    tasks: toYamlText({ tasks: planner.tasks }),
-  };
-}
-
 function syntaxCheck(name: ConfigKey, text: string): void {
   try {
     load(text);
@@ -54,13 +39,43 @@ function syntaxCheck(name: ConfigKey, text: string): void {
   }
 }
 
+const EMPTY_DOCS: Record<ConfigKey, string> = {
+  season: "", practices: "", teams: "", colors: "", members: "", tasks: "",
+};
+
 export function ConfigPage({ planner, onSaved }: Props) {
-  const [documents, setDocuments] = useState(() => buildInitialDocs(planner));
-  const [originals, setOriginals] = useState(() => buildInitialDocs(planner));
+  const [documents, setDocuments] = useState<Record<ConfigKey, string>>(EMPTY_DOCS);
+  const [originals, setOriginals] = useState<Record<ConfigKey, string>>(EMPTY_DOCS);
   const [fileWarnings, setFileWarnings] = useState<Partial<Record<ConfigKey, string>>>({});
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const rows = useMemo(() => 12, []);
+  const rows = useMemo(() => 24, []);
+
+  const anyDirty = useMemo(
+    () => CONFIG_DOCS.some((doc) => documents[doc.key] !== originals[doc.key]),
+    [documents, originals],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchAll() {
+      const entries = await Promise.all(
+        CONFIG_DOCS.map(async (doc) => {
+          const text = await getConfigYaml(doc.key);
+          return [doc.key, text] as const;
+        })
+      );
+      if (cancelled) return;
+      const docs = { ...EMPTY_DOCS };
+      for (const [key, text] of entries) docs[key] = text;
+      setDocuments(docs);
+      setOriginals(docs);
+      setLoading(false);
+    }
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [planner]);
 
   const updateOne = async (key: ConfigKey): Promise<boolean> => {
     const yamlText = documents[key] ?? "";
@@ -78,7 +93,7 @@ export function ConfigPage({ planner, onSaved }: Props) {
   };
 
   const updateAll = async () => {
-    setStatus("Updating...");
+    setStatus("Saving...");
     const failures: string[] = [];
     let updated = 0;
 
@@ -99,12 +114,10 @@ export function ConfigPage({ planner, onSaved }: Props) {
     onSaved();
   };
 
+  if (loading) return <div className="config-page"><p className="muted">Loading config files...</p></div>;
+
   return (
     <div className="config-page">
-      <p className="muted">
-        This page writes updates to YAML-backed API resources. Manual edits in YAML files trigger live
-        updates as well.
-      </p>
       <div className="editor-grid">
         {CONFIG_DOCS.map((doc) => (
           <section key={doc.key} className="config-section">
@@ -139,7 +152,7 @@ export function ConfigPage({ planner, onSaved }: Props) {
       </div>
 
       <div className="config-actions">
-        <button onClick={updateAll}>Update All</button>
+        <button onClick={updateAll} disabled={!anyDirty}>Save All</button>
         <span className="muted">{status}</span>
       </div>
     </div>

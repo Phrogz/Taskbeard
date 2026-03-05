@@ -71,6 +71,12 @@ class YamlStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
+    def read_raw(self, rel_path: str) -> str:
+        path = self._abs_path(rel_path)
+        if not path.exists():
+            return ""
+        return path.read_text(encoding="utf-8")
+
     def read(self, rel_path: str) -> dict[str, Any]:
         path = self._abs_path(rel_path)
         if not path.exists():

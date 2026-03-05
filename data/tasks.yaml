@@ -71,9 +71,9 @@ tasks:
   priority: want
 - id: place-roborio
   title: Place RoboRIO, APU, Battery, etc.
-  start_date: '2026-02-17'
-  end_date: '2026-02-20'
-  est_hours: 4
+  start_date: '2026-03-23'
+  end_date: '2026-03-24'
+  est_hours: 10
   completed: false
   teams: electrical
   depends_on:
@@ -81,29 +81,29 @@ tasks:
   priority: urgent
 - id: wire-intake
   title: Wire up Intake
-  start_date: '2026-02-21'
-  end_date: '2026-02-23'
+  start_date: '2026-03-25'
+  end_date: '2026-03-26'
   est_hours: 3
   completed: false
   teams: electrical
   depends_on: place-roborio
   assigned_to: hayden
-  priority: urgent
+  priority: need
 - id: wire-transit
   title: Wire up Transit
-  start_date: '2026-02-24'
-  end_date: '2026-02-28'
-  est_hours: 6
+  start_date: '2026-03-25'
+  end_date: '2026-03-26'
+  est_hours: 4
   completed: false
   teams: electrical
   depends_on: place-roborio
   assigned_to: clara
-  priority: urgent
+  priority: need
 - id: attach-cameras
   title: Attach Cameras
-  start_date: '2026-03-02'
-  end_date: '2026-03-03'
-  est_hours: 2
+  start_date: '2026-03-29'
+  end_date: '2026-03-30'
+  est_hours: 6
   completed: false
   teams: [electrical, code]
   depends_on:
@@ -111,14 +111,14 @@ tasks:
   priority: urgent
 - id: wire-shooter-feeder
   title: Wire Up Shooter + Feeder
-  start_date: '2026-03-04'
-  end_date: '2026-03-05'
+  start_date: '2026-03-25'
+  end_date: '2026-03-26'
   est_hours: 4
   completed: false
   teams: electrical
   depends_on: wire-transit
   assigned_to:
-  priority: want
+  priority: need
 - id: order-bumpers
   title: Order Bumpers
   start_date: '2026-03-01'
@@ -191,14 +191,14 @@ tasks:
   priority: want
 - id: shooter-kicker-control
   title: Shooter + Kicker Control
-  start_date: '2026-02-17'
-  end_date: '2026-02-20'
-  est_hours: 4
-  completed: false
+  start_date: '2026-03-01'
+  end_date: '2026-03-02'
+  est_hours: 6
+  completed: true
   teams: code
   depends_on:
   assigned_to: badri
-  priority: want
+  priority: need
 - id: strategy-dashboard
   title: Strategy Dashboard
   start_date: '2026-02-21'
@@ -211,30 +211,30 @@ tasks:
   priority: want
 - id: intake-transit-control
   title: Intake + Transit Control
-  start_date: '2026-02-25'
-  end_date: '2026-03-01'
-  est_hours: 5
+  start_date: '2026-03-23'
+  end_date: '2026-03-24'
+  est_hours: 10
   completed: false
   teams: code
   depends_on: [wire-intake, wire-transit]
   assigned_to: sterling
-  priority: want
+  priority: need
 - id: current-limiting
   title: Current Limiting
-  start_date: '2026-02-26'
-  end_date: '2026-03-01'
-  est_hours: 4
+  start_date: '2026-03-22'
+  end_date: '2026-03-23'
+  est_hours: 16
   completed: false
   teams: code
   depends_on:
   assigned_to: eli
-  priority: want
+  priority: need
   description: ''
 - id: cool-led-effects
   title: Cool LED Effects
-  start_date: '2026-03-31'
+  start_date: '2026-04-01'
   end_date: '2026-04-02'
-  est_hours: 6
+  est_hours: 4
   completed: false
   teams: [code, electrical]
   depends_on:
@@ -352,19 +352,19 @@ tasks:
   priority: want
 - id: attach-robot-leds
   title: Attach Robot LEDs
-  start_date: '2026-03-23'
-  end_date: '2026-03-24'
+  start_date: '2026-03-30'
+  end_date: '2026-03-31'
   est_hours: 3
   completed: false
   teams: electrical
   depends_on: cool-led-effects
   assigned_to:
-  priority: want
+  priority: need
 - id: wire-management
   title: Wire Management
-  start_date: '2026-03-25'
-  end_date: '2026-03-30'
-  est_hours: 3
+  start_date: '2026-04-01'
+  end_date: '2026-04-02'
+  est_hours: 4
   completed: false
   teams: electrical
   depends_on: attach-robot-leds
@@ -393,9 +393,9 @@ tasks:
   priority: need
 - id: wiring-diagram
   title: Wiring Diagram
-  start_date: '2026-03-27'
-  end_date: '2026-03-30'
-  est_hours: 3
+  start_date: '2026-04-05'
+  end_date: '2026-04-06'
+  est_hours: 6
   completed: false
   teams: electrical
   depends_on:
@@ -433,7 +433,7 @@ tasks:
   priority: need
 - id: aim-shoot-test-fix
   title: Aim + Shoot Test + Fix
-  start_date: '2026-03-23'
+  start_date: '2026-03-24'
   end_date: '2026-03-26'
   est_hours: 6
   completed: false
@@ -544,8 +544,8 @@ tasks:
 - id: lasercan-for-fuel-detection
   title: LaserCAN for fuel detection
   teams: code
-  start_date: '2026-03-25'
-  end_date: '2026-03-27'
+  start_date: '2026-03-29'
+  end_date: '2026-03-29'
   est_hours: 4
   depends_on:
   assigned_to:
@@ -601,8 +601,8 @@ tasks:
 - id: fix-auto-orientation
   title: Fix auto orientation
   teams: code
-  start_date: '2026-03-23'
-  end_date: '2026-03-24'
+  start_date: '2026-03-25'
+  end_date: '2026-03-26'
   est_hours: 4
   depends_on:
   assigned_to:

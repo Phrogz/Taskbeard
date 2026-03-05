@@ -66,6 +66,13 @@ export async function putConfig(name: string, payload: unknown): Promise<void> {
   if (!response.ok) throw new Error(await response.text());
 }
 
+export async function getConfigYaml(name: string): Promise<string> {
+  const response = await fetch(`/api/config/${name}/yaml`);
+  if (!response.ok) throw new Error(await response.text());
+  const data = await response.json();
+  return data.yaml_text;
+}
+
 export async function putConfigYaml(name: string, yamlText: string): Promise<void> {
   const response = await fetch(`/api/config/${name}/yaml`, {
     method: "PUT",

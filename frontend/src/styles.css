@@ -599,7 +599,7 @@ h3.config-section-head {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 2em;
+  margin-top: 0;
   margin-bottom: 0.3em;
 }
 
@@ -617,7 +617,20 @@ h3.config-section-head {
   cursor: default;
 }
 
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+}
+
 .editor-grid textarea {
+  flex: 1;
   width: 100%;
   border-radius: 0.35rem;
   border: 1px solid #374151;
@@ -632,6 +645,11 @@ h3.config-section-head {
   display: flex;
   gap: 0.6rem;
   align-items: center;
+}
+
+.config-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .team-page {
