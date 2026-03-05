@@ -73,18 +73,24 @@ export function ConfigPage({ planner, onSaved, readOnly }: Props) {
   useEffect(() => {
     let cancelled = false;
     async function fetchAll() {
-      const entries = await Promise.all(
-        CONFIG_DOCS.map(async (doc) => {
-          const text = await getConfigYaml(doc.key);
-          return [doc.key, text] as const;
-        })
-      );
-      if (cancelled) return;
-      const docs = { ...EMPTY_DOCS };
-      for (const [key, text] of entries) docs[key] = text;
-      setDocuments(docs);
-      setOriginals(docs);
-      setLoading(false);
+      try {
+        const entries = await Promise.all(
+          CONFIG_DOCS.map(async (doc) => {
+            const text = await getConfigYaml(doc.key);
+            return [doc.key, text] as const;
+          })
+        );
+        if (cancelled) return;
+        const docs = { ...EMPTY_DOCS };
+        for (const [key, text] of entries) docs[key] = text;
+        setDocuments(docs);
+        setOriginals(docs);
+      } catch (error) {
+        if (cancelled) return;
+        addToast(error instanceof Error ? error.message : "Failed to load config", "error");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     fetchAll();
     return () => { cancelled = true; };

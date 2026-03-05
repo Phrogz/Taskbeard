@@ -619,7 +619,7 @@ h3.config-section-head {
 
 .editor-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(350px, calc((100% - 2rem) / 3)), 1fr));
   gap: 1rem;
   margin-top: 0.75rem;
 }
