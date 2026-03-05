@@ -66,6 +66,7 @@ export function App() {
   const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [dayWidth, setDayWidth] = useState(35);
+  const [practiceTimeMode, setPracticeTimeMode] = useState(false);
   const [undoStack, setUndoStack] = useState<TaskItem[][]>([]);
   const [redoStack, setRedoStack] = useState<TaskItem[][]>([]);
 
@@ -584,23 +585,33 @@ export function App() {
   }
 
   const toggleTeams = () => {
+    if (tab !== "tasks") {
+      setTab("tasks");
+      setShowTeams(true);
+      setShowPeople(false);
+      return;
+    }
     if (showTeams && !showPeople) {
       setShowTeams(false);
       setShowPeople(true);
       return;
     }
     setShowTeams((value) => !value);
-    setTab("tasks");
   };
 
   const togglePeople = () => {
+    if (tab !== "tasks") {
+      setTab("tasks");
+      setShowTeams(false);
+      setShowPeople(true);
+      return;
+    }
     if (showPeople && !showTeams) {
       setShowPeople(false);
       setShowTeams(true);
       return;
     }
     setShowPeople((value) => !value);
-    setTab("tasks");
   };
 
   return (
@@ -637,6 +648,14 @@ export function App() {
             >
               +
             </button>
+            <label className="practice-time-toggle">
+              <input
+                type="checkbox"
+                checked={practiceTimeMode}
+                onChange={(e) => setPracticeTimeMode(e.target.checked)}
+              />
+              Practice Time
+            </label>
           </div>
         )}
         {authUser && (
@@ -661,6 +680,7 @@ export function App() {
           showTeams={showTeams}
           showPeople={showPeople}
           dayWidth={dayWidth}
+          practiceTimeMode={practiceTimeMode}
           readOnly={isReadOnly}
           onMoveTask={onMoveTask}
           onResizeTask={onResizeTask}
