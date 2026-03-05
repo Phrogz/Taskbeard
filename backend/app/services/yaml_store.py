@@ -3,9 +3,12 @@ from __future__ import annotations
 import copy
 import threading
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from .snapshot_service import SnapshotService
 
 
 class _CompactDumper(yaml.SafeDumper):
@@ -52,6 +55,7 @@ EXTRA_KEY_TYPES: dict[str, dict[str, type]] = {
 class YamlStore:
     def __init__(self, root_dir: Path):
         self.root_dir = root_dir
+        self.snapshot_service: SnapshotService | None = None
         self._locks: dict[Path, threading.Lock] = {}
         self._global_lock = threading.Lock()
 
@@ -106,6 +110,8 @@ class YamlStore:
                     allow_unicode=True,
                 )
             tmp_path.replace(path)
+        if self.snapshot_service is not None:
+            self.snapshot_service.notify_write()
         return copy.deepcopy(payload)
 
     def parse_yaml_text(self, rel_path: str, yaml_text: str) -> dict[str, Any]:

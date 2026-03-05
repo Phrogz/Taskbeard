@@ -40,13 +40,14 @@ type Props = {
   onCancelRename: () => void;
   onCreateTaskAt: (startDate: string, teamId: string) => void;
   dayWidth: number;
+  readOnly?: boolean;
 };
 
 const CARD_HEIGHT = 30;
 const CARD_TOP = 2;
 const CARD_BOTTOM = 2;
 const ROW_GAP = 1;
-const TEAM_LABEL_WIDTH = 170;
+const TEAM_LABEL_WIDTH = 120;
 const PERSON_LABEL_WIDTH = 100;
 const PERSON_ROW_HEIGHT = 20;
 
@@ -129,6 +130,7 @@ export function TimelineGrid({
   onCancelRename,
   onCreateTaskAt,
   dayWidth,
+  readOnly,
 }: Props) {
   const seasonStart = planner.season.start_date;
   const seasonEnd = planner.season.end_date;
@@ -667,14 +669,14 @@ export function TimelineGrid({
         </DropdownMenu.Trigger>
         <div
           className={`task-card ${priorityClass} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""} ${isDragging && dragTaskKeyRef.current !== taskKey ? "drag-passive" : ""}`}
-          draggable={!isRenaming && !resizePreview}
+          draggable={!readOnly && !isRenaming && !resizePreview}
           onDragStart={(ev) => onDragStart(ev, task.id, teamId)}
           onDragEnd={onDragEnd}
           onMouseDown={(ev) => {
             ev.stopPropagation();
             if (ev.button === 2) {
               onSelectTask(task.id, teamId);
-              if (!isRenaming) {
+              if (!readOnly && !isRenaming) {
                 setMenuAnchorPos(anchorPosFromEvent(ev));
                 menuOpenRequestKeyRef.current = taskKey;
                 setOpenMenuKey(taskKey);
@@ -722,7 +724,7 @@ export function TimelineGrid({
             }
             pointerStateRef.current = null;
             onSelectTask(task.id, teamId);
-            if (!isRenaming) {
+            if (!readOnly && !isRenaming) {
               setMenuAnchorPos(anchorPosFromEvent(ev));
               menuOpenRequestKeyRef.current = taskKey;
               setOpenMenuKey(taskKey);
@@ -747,7 +749,7 @@ export function TimelineGrid({
             }
             pointerStateRef.current = null;
             onSelectTask(task.id, teamId);
-            if (!isRenaming) {
+            if (!readOnly && !isRenaming) {
               setMenuAnchorPos(anchorPosFromEvent(ev));
               menuOpenRequestKeyRef.current = taskKey;
               setOpenMenuKey(taskKey);
@@ -755,6 +757,7 @@ export function TimelineGrid({
           }}
           onDoubleClick={(ev) => {
             ev.stopPropagation();
+            if (readOnly) return;
             setOpenMenuKey(null);
             onSelectTask(task.id, teamId);
             onStartRenameTask(task, teamId);
@@ -771,13 +774,15 @@ export function TimelineGrid({
             color: fillColor.fg
           }}
         >
-          <div
-            className="task-resize-handle left"
-            onClick={(ev) => ev.stopPropagation()}
-            onMouseDown={(ev) =>
-              onResizeHandleMouseDown(ev, task, "left", teamId, startOffset, startOffset + span - 1)
-            }
-          />
+          {!readOnly && (
+            <div
+              className="task-resize-handle left"
+              onClick={(ev) => ev.stopPropagation()}
+              onMouseDown={(ev) =>
+                onResizeHandleMouseDown(ev, task, "left", teamId, startOffset, startOffset + span - 1)
+              }
+            />
+          )}
           {isRenaming ? (
             <input
               className="task-title-input"
@@ -801,13 +806,15 @@ export function TimelineGrid({
           ) : (
             <span>{task.title}</span>
           )}
-          <div
-            className="task-resize-handle right"
-            onClick={(ev) => ev.stopPropagation()}
-            onMouseDown={(ev) =>
-              onResizeHandleMouseDown(ev, task, "right", teamId, startOffset, startOffset + span - 1)
-            }
-          />
+          {!readOnly && (
+            <div
+              className="task-resize-handle right"
+              onClick={(ev) => ev.stopPropagation()}
+              onMouseDown={(ev) =>
+                onResizeHandleMouseDown(ev, task, "right", teamId, startOffset, startOffset + span - 1)
+              }
+            />
+          )}
         </div>
         {!isRenaming && (
           <DropdownMenu.Portal>
@@ -1016,9 +1023,9 @@ export function TimelineGrid({
                 <div
                   key={`${team.id}-${day.date}`}
                   className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
-                  onDragOver={onLaneDragOver}
-                  onDrop={(ev) => onDrop(ev, day.date, team.id)}
-                  onDoubleClick={() => onCreateTaskAt(day.date, team.id)}
+                  onDragOver={readOnly ? undefined : onLaneDragOver}
+                  onDrop={readOnly ? undefined : (ev) => onDrop(ev, day.date, team.id)}
+                  onDoubleClick={readOnly ? undefined : () => onCreateTaskAt(day.date, team.id)}
                   title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
                   style={{ minHeight: laneHeight }}
                 />
@@ -1188,12 +1195,12 @@ export function TimelineGrid({
                   <div
                     key={`person-${person.id}-${day.date}`}
                     className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
-                    onDragOver={onLaneDragOver}
-                    onDrop={(ev) => {
+                    onDragOver={readOnly ? undefined : onLaneDragOver}
+                    onDrop={readOnly ? undefined : (ev) => {
                       const srcTeam = ev.dataTransfer.getData("source_team_id");
                       onDrop(ev, day.date, srcTeam || firstTeamId);
                     }}
-                    onDoubleClick={() => onCreateTaskAt(day.date, firstTeamId)}
+                    onDoubleClick={readOnly ? undefined : () => onCreateTaskAt(day.date, firstTeamId)}
                     title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
                     style={{ minHeight: laneHeight }}
                   />

@@ -17,6 +17,7 @@ type Props = {
     teamId: string,
     row: { task_id: string | null; title: string; priority: TaskItem["priority"]; est_hours: number; description: string }
   ) => Promise<void>;
+  readOnly?: boolean;
 };
 
 const COLUMNS = ["title", "priority", "est_hours", "description"] as const;
@@ -70,7 +71,7 @@ function buildRowsByTeam(planner: PlannerPayload): Record<string, EditableTaskRo
   return values;
 }
 
-export function TaskListPage({ planner, onCommitTaskRow }: Props) {
+export function TaskListPage({ planner, onCommitTaskRow, readOnly }: Props) {
   const [rowsByTeam, setRowsByTeam] = useState<Record<string, EditableTaskRow[]>>(() =>
     buildRowsByTeam(planner)
   );
@@ -84,6 +85,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
 
   const rowsForTeam = (teamId: string): EditableTaskRow[] => {
     const rows = rowsByTeam[teamId] ?? [blankRow()];
+    if (readOnly) return rows.filter((r) => r.task_id !== null);
     return ensureTrailingBlank(rows);
   };
 
@@ -233,6 +235,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
                         onKeyDown={(event) => onCellKeyDown(event, team.id, rowIndex, "title")}
                         placeholder={rowIndex === rows.length - 1 ? "New task" : ""}
                         disabled={savingTeamId === team.id}
+                        readOnly={readOnly}
                         data-testid={`task-list-${team.id}-${rowIndex}-title`}
                       />
                     </td>
@@ -250,7 +253,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
                           }))
                         }
                         onKeyDown={(event) => onCellKeyDown(event, team.id, rowIndex, "priority")}
-                        disabled={savingTeamId === team.id}
+                        disabled={readOnly || savingTeamId === team.id}
                         data-testid={`task-list-${team.id}-${rowIndex}-priority`}
                       >
                         <option value="urgent">urgent</option>
@@ -275,6 +278,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
                         placeholder="0"
                         inputMode="decimal"
                         disabled={savingTeamId === team.id}
+                        readOnly={readOnly}
                         data-testid={`task-list-${team.id}-${rowIndex}-est_hours`}
                       />
                     </td>
@@ -293,6 +297,7 @@ export function TaskListPage({ planner, onCommitTaskRow }: Props) {
                         }
                         onKeyDown={(event) => onCellKeyDown(event, team.id, rowIndex, "description")}
                         disabled={savingTeamId === team.id}
+                        readOnly={readOnly}
                         data-testid={`task-list-${team.id}-${rowIndex}-description`}
                       />
                     </td>

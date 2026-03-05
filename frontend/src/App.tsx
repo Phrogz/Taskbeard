@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BoardPage } from "./pages/BoardPage";
 import { ConfigPage } from "./pages/ConfigPage";
+import { LoginPage } from "./pages/LoginPage";
+import { NotAuthorizedPage } from "./pages/NotAuthorizedPage";
 import { TaskListPage } from "./pages/TaskListPage";
 import {
   getPlanner,
@@ -9,6 +12,7 @@ import {
   type PlannerPayload,
   type TaskItem
 } from "./services/plannerApi";
+import { getClientId, getMe, logout, type AuthUser } from "./services/authApi";
 
 export type Tab = "tasks" | "task-list" | "config";
 
@@ -64,6 +68,32 @@ export function App() {
   const [dayWidth, setDayWidth] = useState(35);
   const [undoStack, setUndoStack] = useState<TaskItem[][]>([]);
   const [redoStack, setRedoStack] = useState<TaskItem[][]>([]);
+
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authClientId, setAuthClientId] = useState<string | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [rejectedEmail, setRejectedEmail] = useState<string | null>(null);
+
+  const authEnabled = authClientId !== null;
+  const isReadOnly = authEnabled && authUser?.role === "viewer";
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const cid = await getClientId();
+      if (cancelled) return;
+      if (!cid) {
+        setAuthLoading(false);
+        return;
+      }
+      setAuthClientId(cid);
+      const user = await getMe();
+      if (cancelled) return;
+      if (user) setAuthUser(user);
+      setAuthLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const cloneTask = (task: TaskItem): TaskItem => ({
     ...task,
@@ -525,6 +555,30 @@ export function App() {
     setRenameDraft("");
   };
 
+  if (authLoading) {
+    return <div className="app-shell">Loading...</div>;
+  }
+
+  if (authEnabled && rejectedEmail) {
+    return (
+      <NotAuthorizedPage
+        email={rejectedEmail}
+        onLogout={() => { setRejectedEmail(null); setAuthUser(null); }}
+      />
+    );
+  }
+
+  if (authEnabled && !authUser) {
+    return (
+      <GoogleOAuthProvider clientId={authClientId!}>
+        <LoginPage
+          onLogin={(user) => { setAuthUser(user); setRejectedEmail(null); }}
+          onUnauthorized={(email) => setRejectedEmail(email)}
+        />
+      </GoogleOAuthProvider>
+    );
+  }
+
   if (!planner) {
     return <div className="app-shell">{status}</div>;
   }
@@ -585,6 +639,20 @@ export function App() {
             </button>
           </div>
         )}
+        {authUser && (
+          <div className="auth-nav">
+            <span className="auth-nav-email">{authUser.email}</span>
+            <button
+              className="auth-nav-logout"
+              onClick={async () => {
+                await logout();
+                setAuthUser(null);
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        )}
       </nav>
 
       {tab === "tasks" ? (
@@ -593,6 +661,7 @@ export function App() {
           showTeams={showTeams}
           showPeople={showPeople}
           dayWidth={dayWidth}
+          readOnly={isReadOnly}
           onMoveTask={onMoveTask}
           onResizeTask={onResizeTask}
           onToggleTaskComplete={onToggleTaskComplete}
@@ -618,13 +687,14 @@ export function App() {
           onCreateTaskAt={onCreateTaskAt}
         />
       ) : tab === "task-list" ? (
-        <TaskListPage planner={planner} onCommitTaskRow={onCommitTaskRow} />
+        <TaskListPage planner={planner} onCommitTaskRow={onCommitTaskRow} readOnly={isReadOnly} />
       ) : (
         <ConfigPage
           planner={planner}
           onSaved={() => {
             void refresh();
           }}
+          readOnly={isReadOnly}
         />
       )}
 

@@ -8,3 +8,4 @@
 - [x] Completed tasks should show at 40% opacity
 - [x] Context menu opens far from mouse cursor, always at the left side
 - [x] Zoom +/- buttons appeared on a separate row from the view-switching tabs instead of sharing the same line
+- [ ] Switching from Task List to the Timeline grid by clicking on just "Teams" sometimes (often?) switches to Teams + People. 

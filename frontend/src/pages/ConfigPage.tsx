@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { load } from "js-yaml";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { load, YAMLException } from "js-yaml";
 import type { PlannerPayload } from "../services/plannerApi";
 import { getConfigYaml, putConfigYaml } from "../services/plannerApi";
+import { Toast, type ToastItem } from "../components/Toast";
 
 type Props = {
   planner: PlannerPayload;
   onSaved: () => void;
+  readOnly?: boolean;
 };
 
 type ConfigKey =
@@ -30,25 +32,36 @@ const CONFIG_DOCS: ConfigDoc[] = [
   { key: "tasks", title: "Tasks" },
 ];
 
-function syntaxCheck(name: ConfigKey, text: string): void {
-  try {
-    load(text);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Invalid YAML syntax";
-    throw new Error(`${name}.yaml syntax error: ${message}`);
+function formatYamlError(name: ConfigKey, error: unknown): string {
+  if (error instanceof YAMLException) {
+    const line = error.mark ? error.mark.line + 1 : "?";
+    const col = error.mark ? error.mark.column + 1 : "?";
+    return `${name}.yaml (line ${line}, col ${col})\n${error.reason}`;
   }
+  if (error instanceof Error) return `${name}.yaml: ${error.message}`;
+  return `${name}.yaml: unknown error`;
 }
 
 const EMPTY_DOCS: Record<ConfigKey, string> = {
   season: "", practices: "", teams: "", colors: "", members: "", tasks: "",
 };
 
-export function ConfigPage({ planner, onSaved }: Props) {
+export function ConfigPage({ planner, onSaved, readOnly }: Props) {
   const [documents, setDocuments] = useState<Record<ConfigKey, string>>(EMPTY_DOCS);
   const [originals, setOriginals] = useState<Record<ConfigKey, string>>(EMPTY_DOCS);
-  const [fileWarnings, setFileWarnings] = useState<Partial<Record<ConfigKey, string>>>({});
-  const [status, setStatus] = useState("");
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const toastId = useRef(0);
+
+  const addToast = useCallback((message: string, variant: ToastItem["variant"]) => {
+    const id = String(++toastId.current);
+    const autoCloseMs = variant === "error" ? 12000 : undefined;
+    setToasts((current) => [...current, { id, message, variant, autoCloseMs }]);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((current) => current.filter((t) => t.id !== id));
+  }, []);
 
   const rows = useMemo(() => 24, []);
 
@@ -80,38 +93,35 @@ export function ConfigPage({ planner, onSaved }: Props) {
   const updateOne = async (key: ConfigKey): Promise<boolean> => {
     const yamlText = documents[key] ?? "";
     try {
-      syntaxCheck(key, yamlText);
+      load(yamlText);
+    } catch (error) {
+      addToast(formatYamlError(key, error), "error");
+      return false;
+    }
+    try {
       await putConfigYaml(key, yamlText);
-      setFileWarnings((current) => ({ ...current, [key]: "" }));
       setOriginals((current) => ({ ...current, [key]: yamlText }));
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Update failed";
-      setFileWarnings((current) => ({ ...current, [key]: message }));
+      addToast(formatYamlError(key, error), "error");
       return false;
     }
   };
 
   const updateAll = async () => {
-    setStatus("Saving...");
-    const failures: string[] = [];
-    let updated = 0;
+    let anyFailed = false;
 
     for (const doc of CONFIG_DOCS) {
+      if (documents[doc.key] === originals[doc.key]) continue;
       const ok = await updateOne(doc.key);
       if (ok) {
-        updated += 1;
+        addToast(`Saved ${doc.key}.yaml`, "success");
       } else {
-        failures.push(doc.key);
+        anyFailed = true;
       }
     }
 
-    if (failures.length > 0) {
-      setStatus(`Updated ${updated}/${CONFIG_DOCS.length}; failed: ${failures.join(", ")}`);
-    } else {
-      setStatus(`Updated ${updated}/${CONFIG_DOCS.length}`);
-    }
-    onSaved();
+    if (!anyFailed) onSaved();
   };
 
   if (loading) return <div className="config-page"><p className="muted">Loading config files...</p></div>;
@@ -123,38 +133,40 @@ export function ConfigPage({ planner, onSaved }: Props) {
           <section key={doc.key} className="config-section">
             <h3 className="config-section-head">
               {doc.title}
-              <button
-                disabled={documents[doc.key] === originals[doc.key]}
-                onClick={async () => {
-                  setStatus(`Saving ${doc.key}.yaml...`);
-                  const ok = await updateOne(doc.key);
-                  if (ok) {
-                    setStatus(`Saved ${doc.key}.yaml`);
-                    onSaved();
-                  } else {
-                    setStatus(`Failed to save ${doc.key}.yaml`);
-                  }
-                }}
-              >
-                Save Changes
-              </button>
+              {!readOnly && (
+                <button
+                  disabled={documents[doc.key] === originals[doc.key]}
+                  onClick={async () => {
+                    const ok = await updateOne(doc.key);
+                    if (ok) {
+                      addToast(`Saved ${doc.key}.yaml`, "success");
+                      onSaved();
+                    }
+                  }}
+                >
+                  Save Changes
+                </button>
+              )}
             </h3>
             <textarea
               value={documents[doc.key]}
+              readOnly={readOnly}
               onChange={(event) =>
                 setDocuments((current) => ({ ...current, [doc.key]: event.target.value }))
               }
               rows={rows}
             />
-            {fileWarnings[doc.key] && <div className="warning-item">{fileWarnings[doc.key]}</div>}
           </section>
         ))}
       </div>
 
-      <div className="config-actions">
-        <button onClick={updateAll} disabled={!anyDirty}>Save All</button>
-        <span className="muted">{status}</span>
-      </div>
+      {!readOnly && (
+        <div className="config-actions">
+          <button onClick={updateAll} disabled={!anyDirty}>Save All</button>
+        </div>
+      )}
+
+      <Toast items={toasts} onDismiss={dismissToast} autoCloseMs={3000} />
     </div>
   );
 }

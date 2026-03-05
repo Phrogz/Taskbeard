@@ -4,9 +4,10 @@ from datetime import date, datetime, timedelta
 import re
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..services.file_watch_service import EventBroker
+from .dependencies import get_current_user, require_admin
 
 
 router = APIRouter(prefix="/api", tags=["planner"])
@@ -116,19 +117,19 @@ def _write_tasks(store: Any, tasks: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 @router.get("/planner")
-def get_planner(request: Request):
+def get_planner(request: Request, _user=Depends(get_current_user)):
     planner = request.app.state.planner_service
     return planner.read_all()
 
 
 @router.get("/tasks")
-def get_tasks(request: Request):
+def get_tasks(request: Request, _user=Depends(get_current_user)):
     store = request.app.state.store
     return {"tasks": _read_normalized_tasks(store)}
 
 
 @router.put("/tasks")
-async def put_tasks(payload: dict, request: Request):
+async def put_tasks(payload: dict, request: Request, _user=Depends(require_admin)):
     store = request.app.state.store
     broker: EventBroker = request.app.state.event_broker
     raw_tasks = payload.get("tasks", []) if isinstance(payload, dict) else []
@@ -147,7 +148,7 @@ async def put_tasks(payload: dict, request: Request):
 
 
 @router.post("/tasks")
-async def create_task(payload: dict, request: Request):
+async def create_task(payload: dict, request: Request, _user=Depends(require_admin)):
     store = request.app.state.store
     broker: EventBroker = request.app.state.event_broker
     tasks = _read_normalized_tasks(store)
@@ -171,7 +172,7 @@ async def create_task(payload: dict, request: Request):
 
 
 @router.put("/tasks/{task_id}")
-async def update_task(task_id: str, payload: dict, request: Request):
+async def update_task(task_id: str, payload: dict, request: Request, _user=Depends(require_admin)):
     store = request.app.state.store
     broker: EventBroker = request.app.state.event_broker
     tasks = _read_normalized_tasks(store)
@@ -230,7 +231,7 @@ def _next_end_date(start_date: str, est_hours: float, practices: dict) -> str:
 
 
 @router.post("/tasks/{task_id}/schedule")
-async def schedule_task(task_id: str, payload: dict, request: Request):
+async def schedule_task(task_id: str, payload: dict, request: Request, _user=Depends(require_admin)):
     start_date = payload.get("start_date")
     if not start_date:
         raise HTTPException(status_code=400, detail="start_date is required")
@@ -257,13 +258,13 @@ async def schedule_task(task_id: str, payload: dict, request: Request):
 
 
 @router.post("/tasks/{task_id}/complete")
-async def complete_task(task_id: str, payload: dict, request: Request):
+async def complete_task(task_id: str, payload: dict, request: Request, _user=Depends(require_admin)):
     completed = bool(payload.get("completed", True))
     return await update_task(task_id, {"completed": completed}, request)
 
 
 @router.delete("/tasks/{task_id}")
-async def delete_task(task_id: str, request: Request):
+async def delete_task(task_id: str, request: Request, _user=Depends(require_admin)):
     store = request.app.state.store
     broker: EventBroker = request.app.state.event_broker
 

@@ -164,7 +164,7 @@ def _start_process(command: list[str], cwd: Path) -> subprocess.Popen:
     return subprocess.Popen(command, cwd=str(cwd))
 
 
-def start_servers(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> int:
+def start_servers(backend_port: int, frontend_port: int) -> int:
     root = repo_root()
     frontend_dir = root / "frontend"
 
@@ -191,13 +191,12 @@ def start_servers(backend_port: int, frontend_port: int, skip_frontend_install: 
         click.echo(str(error), err=True)
         return 1
 
-    if not skip_frontend_install and not (frontend_dir / "node_modules").exists():
-        click.echo("[start] Installing frontend dependencies (npm install)...")
-        try:
-            _run_checked(["npm", "install"], frontend_dir)
-        except RuntimeError as error:
-            click.echo(str(error), err=True)
-            return 1
+    click.echo("[start] Ensuring frontend dependencies are up to date...")
+    try:
+        _run_checked(["npm", "install"], frontend_dir)
+    except RuntimeError as error:
+        click.echo(str(error), err=True)
+        return 1
 
     backend_cmd = [
         sys.executable,
@@ -292,9 +291,8 @@ def cli() -> None:
 @cli.command()
 @click.option("--backend-port", type=int, default=8000, show_default=True, envvar="TASKBEARD_BACKEND_PORT")
 @click.option("--frontend-port", type=int, default=5173, show_default=True, envvar="TASKBEARD_FRONTEND_PORT")
-@click.option("--skip-frontend-install", is_flag=True)
-def start(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
-    raise SystemExit(start_servers(backend_port, frontend_port, skip_frontend_install))
+def start(backend_port: int, frontend_port: int) -> None:
+    raise SystemExit(start_servers(backend_port, frontend_port))
 
 
 @cli.command()
@@ -309,10 +307,9 @@ def stop(timeout: float, backend_port: int, frontend_port: int, extra_port: tupl
 @cli.command()
 @click.option("--backend-port", type=int, default=8000, show_default=True, envvar="TASKBEARD_BACKEND_PORT")
 @click.option("--frontend-port", type=int, default=5173, show_default=True, envvar="TASKBEARD_FRONTEND_PORT")
-@click.option("--skip-frontend-install", is_flag=True)
-def restart(backend_port: int, frontend_port: int, skip_frontend_install: bool) -> None:
+def restart(backend_port: int, frontend_port: int) -> None:
     stop_servers(timeout=8.0, backend_port=backend_port, frontend_port=frontend_port, extra_port=())
-    raise SystemExit(start_servers(backend_port, frontend_port, skip_frontend_install))
+    raise SystemExit(start_servers(backend_port, frontend_port))
 
 
 if __name__ == "__main__":

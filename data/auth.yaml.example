@@ -1,0 +1,17 @@
+# Google OAuth authentication configuration for Taskbeard.
+# Copy this file to auth.yaml and fill in your values to enable authentication.
+# Without auth.yaml, the app runs with no authentication (open access).
+
+# Your Google OAuth 2.0 Client ID (created at https://console.cloud.google.com/apis/credentials)
+google_client_id: "YOUR_CLIENT_ID.apps.googleusercontent.com"
+
+# Full read/write access (also implies viewer access).
+# List specific email addresses.
+admins:
+  - admin@school.org
+
+# Read-only access.
+# Use "@domain" to match any email in that domain; bare emails match exactly.
+# Admins do NOT need to be listed here — they automatically have viewer access.
+viewers:
+  - "@school.org"

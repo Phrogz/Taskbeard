@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..services.file_watch_service import EventBroker
+from .dependencies import get_current_user, require_admin
 
 
 router = APIRouter(prefix="/api/config", tags=["config"])
@@ -51,7 +52,7 @@ def _resolve_rel_path(name: str) -> str:
 
 
 @router.get("/{name}")
-def get_config(name: str, request: Request):
+def get_config(name: str, request: Request, _user=Depends(get_current_user)):
     store = request.app.state.store
     rel_path = _resolve_rel_path(name)
     try:
@@ -61,7 +62,7 @@ def get_config(name: str, request: Request):
 
 
 @router.get("/{name}/yaml")
-def get_config_yaml(name: str, request: Request):
+def get_config_yaml(name: str, request: Request, _user=Depends(get_current_user)):
     store = request.app.state.store
     rel_path = _resolve_rel_path(name)
     try:
@@ -71,7 +72,7 @@ def get_config_yaml(name: str, request: Request):
 
 
 @router.put("/{name}")
-async def put_config(name: str, payload: dict[str, Any], request: Request):
+async def put_config(name: str, payload: dict[str, Any], request: Request, _user=Depends(require_admin)):
     store = request.app.state.store
     broker: EventBroker = request.app.state.event_broker
     rel_path = _resolve_rel_path(name)
@@ -86,7 +87,7 @@ async def put_config(name: str, payload: dict[str, Any], request: Request):
 
 
 @router.put("/{name}/yaml")
-async def put_config_yaml(name: str, payload: dict[str, Any], request: Request):
+async def put_config_yaml(name: str, payload: dict[str, Any], request: Request, _user=Depends(require_admin)):
     store = request.app.state.store
     broker: EventBroker = request.app.state.event_broker
     rel_path = _resolve_rel_path(name)

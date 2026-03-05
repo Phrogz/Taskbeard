@@ -8,11 +8,14 @@
     "vitest.rootConfig": "frontend/vite.config.ts",
     "vitest.vitestPackagePath": "frontend/node_modules/vitest/package.json",
     "testing.automaticallyOpenTestResults": "openOnTestFailure",
-    "explorer.excludeGitIgnore": true
+    "explorer.excludeGitIgnore": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"]
   },
   "extensions": {
     "recommendations": [
-      "vitest.explorer"
+      "vitest.explorer",
+      "ms-python.python"
     ]
   }
 }

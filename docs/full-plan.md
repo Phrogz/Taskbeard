@@ -45,6 +45,7 @@ Build a web app that resembles the seasonal robotics planning sheet and supports
 - `backend/app/services/yaml_store.py`: validated read/write with atomic updates.
 - `backend/app/services/planner_service.py`: timeline projection, warnings, cross-team expansion.
 - `backend/app/services/file_watch_service.py`: watch data directory and publish change events.
+- `backend/app/services/snapshot_service.py`: automatic tar.gz snapshots of data files on write with cooldown.
 
 ### Frontend
 - `frontend/src/pages/BoardPage.tsx`: swimlane board timeline.
@@ -68,6 +69,7 @@ All UI edits write back to these files. Any external edit to these files trigger
 - In-process write lock per file.
 - Schema validation before persist.
 - SSE channel emits file change events to all clients.
+- Automatic data snapshots: after each write, if 15+ minutes have elapsed since the last snapshot, all `data/*.yaml` files are archived to `data/snapshots/snapshot-YYYYMMDD-HHMMSS.tar.gz` (compresslevel=9). Last 50 snapshots retained; older ones pruned automatically. No snapshots during idle periods.
 
 ## Deployment (Ubuntu + nginx)
 - Run backend with `uvicorn` (systemd service).
@@ -113,6 +115,10 @@ All UI edits write back to these files. Any external edit to these files trigger
 - People-only timeline view: when People is toggled on and Teams is toggled off (`#people`), the board shows a flat alphabetically-sorted list of all people — one row per person with full interactive task cards (draggable, resizable, context menu, rename). Task card colors come from the task's first team. Date changes apply to the entire task. Backend generates assignment-overlap warnings when a person has multiple tasks on the same day, shown as warning cards for both involved tasks.
 
 - Task YAML cleanup: auto-generated IDs (`task-mmau3qar-...`) replaced with title-derived slugs (e.g. `cad`, `use-cancoders-for-shooter`); human-readable IDs preserved. Renaming a task regenerates its slug ID and updates all `depends_on` references. YAML serialization uses compact format: `null` for empty lists, scalar for single values, inline flow `[a, b]` for multiples. Custom `_CompactDumper` in `yaml_store.py` handles this for all YAML files.
+
+- Automatic data snapshots: `SnapshotService` creates tar.gz archives of all YAML data files after writes, with a 15-minute cooldown. Last 50 snapshots kept in `data/snapshots/` (gitignored). No snapshots when idle.
+
+- Google OAuth authentication with two roles (admin/viewer) configured via `data/auth.yaml`. Domain-based (`@school.org`) and per-email authorization. Backend uses `google-auth` for token verification and `pyjwt` for session cookies. Frontend uses `@react-oauth/google` for sign-in. Read-only viewers see the entire site but cannot mutate data: drag/resize/context-menu disabled on the board, inputs read-only on Task List, save buttons hidden on Config. Auth is opt-in (backward compatible when auth.yaml is absent).
 
 ## Queued TODO (Next Phase)
 - Add regression tests for board interaction state transitions (selection, rename, undo/redo stack semantics).

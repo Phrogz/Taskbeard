@@ -37,6 +37,7 @@ type Props = {
   onCancelRename: () => void;
   onCreateTaskAt: (startDate: string, teamId: string) => void;
   dayWidth: number;
+  readOnly?: boolean;
 };
 
 export function BoardPage({
@@ -62,6 +63,7 @@ export function BoardPage({
   onCancelRename,
   onCreateTaskAt,
   dayWidth,
+  readOnly,
 }: Props) {
 
   const warningByTask = useMemo(() => {
@@ -100,6 +102,7 @@ export function BoardPage({
           onCancelRename={onCancelRename}
           onCreateTaskAt={onCreateTaskAt}
           dayWidth={dayWidth}
+          readOnly={readOnly}
         />
       </div>
       <section className="warnings-bar">
