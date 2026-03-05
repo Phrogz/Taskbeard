@@ -86,29 +86,23 @@ overrides:
 
 Hours are used to auto-calculate task end dates from estimated hours.
 
-### `teams.yaml` — Team definitions
+### `teams.yaml` — Team definitions and color palettes
 
 ```yaml
 teams:
   - id: cad
     name: CAD
-    colors: greens     # references a palette name from colors.yaml
+    colors: greens     # references a palette name defined below
   - id: build
     name: Build
     colors: blues
-```
 
-Each team becomes a swimlane on the board.
-
-### `colors.yaml` — Color palettes
-
-```yaml
 colors:
   greens: ["#76b900", "#bff230", "#3f8500", "#cfff40", "#265600"]
   blues: ["#0074df", "#7cd7fe", "#0046a4", "#cbf5ff", "#002781"]
 ```
 
-Each palette is an array of hex colors. The first color is the default for tasks in that team's lane; additional colors handle same-day overlap.
+Each team becomes a swimlane on the board. Each palette is an array of hex colors. The first color is the default for tasks in that team's lane; additional colors handle same-day overlap.
 
 ### `members.yaml` — Team members
 

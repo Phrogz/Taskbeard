@@ -53,7 +53,6 @@ class PlannerService:
         season_file = self.store.read("season.yaml")
         practices_file = self.store.read("practices.yaml")
         teams_file = self.store.read("teams.yaml")
-        colors_file = self.store.read("colors.yaml")
         members_file = self.store.read("members.yaml")
         tasks_file = self.store.read("tasks.yaml")
 
@@ -67,7 +66,7 @@ class PlannerService:
             "events": season_file.get("events", []),
             "breaks": season_file.get("breaks", []),
             "teams": teams_file.get("teams", []),
-            "colors": colors_file.get("colors", {}),
+            "colors": teams_file.get("colors", {}),
             "members": members,
             "tasks": tasks,
             "dates": self._build_dates(season),

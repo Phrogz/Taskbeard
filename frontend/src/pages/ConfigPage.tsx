@@ -14,7 +14,6 @@ type ConfigKey =
   | "season"
   | "practices"
   | "teams"
-  | "colors"
   | "members"
   | "tasks";
 
@@ -27,7 +26,6 @@ const CONFIG_DOCS: ConfigDoc[] = [
   { key: "season", title: "Season" },
   { key: "practices", title: "Practices" },
   { key: "teams", title: "Teams" },
-  { key: "colors", title: "Color Palettes" },
   { key: "members", title: "Members" },
   { key: "tasks", title: "Tasks" },
 ];
@@ -43,7 +41,7 @@ function formatYamlError(name: ConfigKey, error: unknown): string {
 }
 
 const EMPTY_DOCS: Record<ConfigKey, string> = {
-  season: "", practices: "", teams: "", colors: "", members: "", tasks: "",
+  season: "", practices: "", teams: "", members: "", tasks: "",
 };
 
 export function ConfigPage({ planner, onSaved, readOnly }: Props) {

@@ -60,10 +60,7 @@ teams:
   - id: electrical
     name: Electrical
     colors: purples
-```
 
-## colors.yaml
-```yaml
 colors:
   greens: ["#cfff40", "#bff230", "#76b900", "#3f8500", "#265600"]
   purples: ["#f9d4ff", "#c359ef", "#9525c6", "#741d9d", "#4d1368"]
@@ -96,7 +93,7 @@ tasks:
 ## Notes
 - Cross-team tasks are represented by multiple `teams` on a single task.
 - Teams reference a palette name with `colors: <palette-key>`.
-- Background colors come from `colors.yaml`; text color is inferred automatically for contrast.
+- Color palettes are defined alongside teams in `teams.yaml`; text color is inferred automatically for contrast.
 - Task `priority` is canonicalized as one of `urgent`, `need`, or `want`.
 - Dependencies are warnings only.
 - Backend derives `past` and `is_today` flags for dates.

@@ -33,7 +33,6 @@ FILE_KEYS: dict[str, str] = {
     "season.yaml": "season",
     "practices.yaml": "default_hours_per_day",
     "teams.yaml": "teams",
-    "colors.yaml": "colors",
     "members.yaml": "members",
     "tasks.yaml": "tasks",
 }
@@ -42,13 +41,13 @@ ROOT_KEY_TYPES: dict[str, type] = {
     "season": dict,
     "default_hours_per_day": dict,
     "teams": list,
-    "colors": dict,
     "members": list,
     "tasks": list,
 }
 
 EXTRA_KEY_TYPES: dict[str, dict[str, type]] = {
     "season.yaml": {"events": list, "breaks": list},
+    "teams.yaml": {"colors": dict},
 }
 
 

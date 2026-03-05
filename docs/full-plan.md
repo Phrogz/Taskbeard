@@ -120,5 +120,7 @@ All UI edits write back to these files. Any external edit to these files trigger
 
 - Google OAuth authentication with two roles (admin/viewer) configured via `data/auth.yaml`. Domain-based (`@school.org`) and per-email authorization. Backend uses `google-auth` for token verification and `pyjwt` for session cookies. Frontend uses `@react-oauth/google` for sign-in. Read-only viewers see the entire site but cannot mutate data: drag/resize/context-menu disabled on the board, inputs read-only on Task List, save buttons hidden on Config. Auth is opt-in (backward compatible when auth.yaml is absent).
 
+- Color palettes merged into `teams.yaml` as a sibling `colors` key; `colors.yaml` deleted. Backend reads colors from the teams file; API response shape unchanged. Config page no longer shows a separate Color Palettes editor.
+
 ## Queued TODO (Next Phase)
 - Add regression tests for board interaction state transitions (selection, rename, undo/redo stack semantics).
