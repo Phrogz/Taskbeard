@@ -37,6 +37,7 @@ type Props = {
   onCancelRename: () => void;
   onCreateTaskAt: (startDate: string, teamId: string) => void;
   dayWidth: number;
+  practiceTimeMode: boolean;
   readOnly?: boolean;
 };
 
@@ -63,6 +64,7 @@ export function BoardPage({
   onCancelRename,
   onCreateTaskAt,
   dayWidth,
+  practiceTimeMode,
   readOnly,
 }: Props) {
 
@@ -102,6 +104,7 @@ export function BoardPage({
           onCancelRename={onCancelRename}
           onCreateTaskAt={onCreateTaskAt}
           dayWidth={dayWidth}
+          practiceTimeMode={practiceTimeMode}
           readOnly={readOnly}
         />
       </div>

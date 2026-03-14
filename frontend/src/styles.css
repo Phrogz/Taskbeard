@@ -97,8 +97,21 @@ body {
 
 .zoom-controls {
   display: flex;
+  align-items: center;
   gap: 0.25rem;
   margin-left: auto;
+}
+
+.practice-time-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .zoom-btn {
@@ -566,6 +579,7 @@ body {
   width: 100%;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

@@ -40,7 +40,12 @@ type Props = {
   onCancelRename: () => void;
   onCreateTaskAt: (startDate: string, teamId: string) => void;
   dayWidth: number;
+  practiceTimeMode: boolean;
   readOnly?: boolean;
+};
+
+const SHORT_WEEKDAYS: Record<string, string> = {
+  Mon: "M", Tue: "T", Wed: "W", Thu: "Θ", Fri: "F", Sat: "S", Sun: "S",
 };
 
 const CARD_HEIGHT = 30;
@@ -129,17 +134,17 @@ export function TimelineGrid({
   onCancelRename,
   onCreateTaskAt,
   dayWidth,
+  practiceTimeMode,
   readOnly,
 }: Props) {
   const seasonStart = planner.season.start_date;
   const seasonEnd = planner.season.end_date;
   const days = planner.dates;
-  const totalWidth = days.length * dayWidth;
-  const dayColumns = `repeat(${days.length}, ${dayWidth}px)`;
   const resizeStateRef = useRef<{
     task: TaskItem;
     side: "left" | "right";
     startClientX: number;
+    originalEdgePixel: number;
     originalStartOffset: number;
     originalEndOffset: number;
   } | null>(null);
@@ -198,29 +203,6 @@ export function TimelineGrid({
     return spans;
   }, [days]);
 
-  const inactiveDateSet = useMemo(() => {
-    const defaults = planner.practices.default_hours_per_day ?? {};
-    const overrideHoursByDate = new Map<string, number>();
-    (planner.practices.overrides ?? []).forEach((item) => {
-      overrideHoursByDate.set(String(item.date).slice(0, 10), Number(item.hours ?? 0));
-    });
-
-    const weekdayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    return new Set(
-      days
-        .filter((day) => {
-          const overrideHours = overrideHoursByDate.get(day.date);
-          if (overrideHours !== undefined) {
-            return overrideHours <= 0;
-          }
-          const weekdayIndex = new Date(`${day.date}T00:00:00`).getDay();
-          const weekdayKey = weekdayKeys[weekdayIndex];
-          return Number(defaults[weekdayKey] ?? 0) <= 0;
-        })
-        .map((day) => day.date)
-    );
-  }, [days, planner.practices.default_hours_per_day, planner.practices.overrides]);
-
   const breakDateSet = useMemo(() => {
     const values = new Set<string>();
     planner.breaks.forEach((schoolBreak) => {
@@ -237,6 +219,30 @@ export function TimelineGrid({
     });
     return values;
   }, [planner.breaks]);
+
+  const inactiveDateSet = useMemo(() => {
+    const defaults = planner.practices.default_hours_per_day ?? {};
+    const overrideHoursByDate = new Map<string, number>();
+    (planner.practices.overrides ?? []).forEach((item) => {
+      overrideHoursByDate.set(String(item.date).slice(0, 10), Number(item.hours ?? 0));
+    });
+
+    const weekdayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    return new Set(
+      days
+        .filter((day) => {
+          if (breakDateSet.has(day.date)) return true;
+          const overrideHours = overrideHoursByDate.get(day.date);
+          if (overrideHours !== undefined) {
+            return overrideHours <= 0;
+          }
+          const weekdayIndex = new Date(`${day.date}T00:00:00`).getDay();
+          const weekdayKey = weekdayKeys[weekdayIndex];
+          return Number(defaults[weekdayKey] ?? 0) <= 0;
+        })
+        .map((day) => day.date)
+    );
+  }, [days, planner.practices.default_hours_per_day, planner.practices.overrides, breakDateSet]);
 
   const practiceOverrideByDate = useMemo(() => {
     const values = new Map<string, { hours: number; label: string }>();
@@ -256,6 +262,10 @@ export function TimelineGrid({
     const values = new Map<string, number>();
 
     days.forEach((day) => {
+      if (breakDateSet.has(day.date)) {
+        values.set(day.date, 0);
+        return;
+      }
       const override = practiceOverrideByDate.get(day.date);
       if (override) {
         values.set(day.date, override.hours);
@@ -267,7 +277,58 @@ export function TimelineGrid({
     });
 
     return values;
-  }, [days, planner.practices.default_hours_per_day, practiceOverrideByDate]);
+  }, [days, planner.practices.default_hours_per_day, practiceOverrideByDate, breakDateSet]);
+
+  const eventDateSet = useMemo(() => {
+    const values = new Set<string>();
+    planner.events.forEach((event) => {
+      const start = new Date(`${String(event.start_date).slice(0, 10)}T00:00:00`);
+      const end = new Date(`${String(event.end_date).slice(0, 10)}T00:00:00`);
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        const yyyy = cursor.getFullYear();
+        const mm = String(cursor.getMonth() + 1).padStart(2, "0");
+        const dd = String(cursor.getDate()).padStart(2, "0");
+        values.add(`${yyyy}-${mm}-${dd}`);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      (event.travel ?? []).forEach((t) => values.add(String(t.date).slice(0, 10)));
+    });
+    return values;
+  }, [planner.events]);
+
+  const dayWidths = useMemo(() => {
+    if (!practiceTimeMode) return days.map(() => dayWidth);
+    return days.map((day) => {
+      const hours = practiceHoursByDate.get(day.date) ?? 0;
+      const isBreakOrEvent = breakDateSet.has(day.date) || eventDateSet.has(day.date);
+      const effectiveHours = hours > 0 ? hours : (isBreakOrEvent ? 1 : 0);
+      return effectiveHours / 2 * dayWidth;
+    });
+  }, [practiceTimeMode, days, dayWidth, practiceHoursByDate, breakDateSet, eventDateSet]);
+
+  const cumulativeOffsets = useMemo(() => {
+    const offsets = [0];
+    for (let i = 0; i < dayWidths.length; i++) {
+      offsets.push(offsets[i] + dayWidths[i]);
+    }
+    return offsets;
+  }, [dayWidths]);
+
+  const pixelLeftForDay = (i: number) => cumulativeOffsets[i] ?? 0;
+  const pixelWidthForSpan = (start: number, span: number) =>
+    (cumulativeOffsets[start + span] ?? cumulativeOffsets[cumulativeOffsets.length - 1]) -
+    (cumulativeOffsets[start] ?? 0);
+
+  const dayIndexAtPixelX = (px: number) => {
+    for (let i = 0; i < cumulativeOffsets.length - 1; i++) {
+      if (px < cumulativeOffsets[i + 1]) return i;
+    }
+    return days.length - 1;
+  };
+
+  const totalWidth = cumulativeOffsets[days.length] ?? 0;
+  const dayColumns = dayWidths.map((w) => w + "px").join(" ");
 
   const laneData = useMemo(() => {
     return planner.teams.map((team) => {
@@ -436,15 +497,23 @@ export function TimelineGrid({
     return values;
   }, [planner.events, seasonStart, seasonEnd]);
 
-  const onDragStart = (ev: React.DragEvent<HTMLDivElement>, taskId: string, teamId: string) => {
+  const onDragStart = (ev: React.DragEvent<HTMLDivElement>, taskId: string, teamId: string, taskStartOffset: number) => {
     if (resizeStateRef.current) {
       ev.preventDefault();
       return;
     }
     const copyMode = ev.altKey;
     const cardRect = ev.currentTarget.getBoundingClientRect();
-    const rawOffset = Math.floor((ev.clientX - cardRect.left) / dayWidth);
-    const grabDayOffset = Number.isFinite(rawOffset) ? Math.max(0, rawOffset) : 0;
+    const mouseInCard = ev.clientX - cardRect.left;
+    let grabDayOffset = 0;
+    if (Number.isFinite(mouseInCard) && mouseInCard > 0) {
+      let accumulated = 0;
+      for (let i = taskStartOffset; i < dayWidths.length; i++) {
+        accumulated += dayWidths[i];
+        if (accumulated > mouseInCard) break;
+        grabDayOffset++;
+      }
+    }
     ev.dataTransfer.setData("text/plain", taskId);
     ev.dataTransfer.setData("task_id", taskId);
     ev.dataTransfer.setData("source_team_id", teamId);
@@ -525,14 +594,17 @@ export function TimelineGrid({
     const state = resizeStateRef.current;
     if (!state) return;
 
-    const deltaDays = Math.round((clientX - state.startClientX) / dayWidth);
+    const newEdgePixel = state.originalEdgePixel + (clientX - state.startClientX);
+    const hoveredDay = state.side === "right"
+      ? dayIndexAtPixelX(Math.max(0, newEdgePixel - 1))
+      : dayIndexAtPixelX(Math.max(0, newEdgePixel));
     let newStartOffset = state.originalStartOffset;
     let newEndOffset = state.originalEndOffset;
 
     if (state.side === "left") {
-      newStartOffset = Math.max(0, Math.min(state.originalStartOffset + deltaDays, newEndOffset));
+      newStartOffset = Math.max(0, Math.min(hoveredDay, newEndOffset));
     } else {
-      newEndOffset = Math.min(days.length - 1, Math.max(state.originalEndOffset + deltaDays, newStartOffset));
+      newEndOffset = Math.min(days.length - 1, Math.max(hoveredDay, newStartOffset));
     }
 
     const startDate = dateAtOffset(newStartOffset);
@@ -552,10 +624,14 @@ export function TimelineGrid({
   ) => {
     ev.preventDefault();
     ev.stopPropagation();
+    const originalEdgePixel = side === "right"
+      ? cumulativeOffsets[endOffset + 1] ?? cumulativeOffsets[cumulativeOffsets.length - 1]
+      : cumulativeOffsets[startOffset] ?? 0;
     resizeStateRef.current = {
       task,
       side,
       startClientX: ev.clientX,
+      originalEdgePixel,
       originalStartOffset: startOffset,
       originalEndOffset: endOffset,
     };
@@ -568,13 +644,16 @@ export function TimelineGrid({
         handleMouseUp(moveEvent);
         return;
       }
-      const deltaDays = Math.round((moveEvent.clientX - state.startClientX) / dayWidth);
+      const newEdgePixel = state.originalEdgePixel + (moveEvent.clientX - state.startClientX);
+      const hoveredDay = state.side === "right"
+        ? dayIndexAtPixelX(Math.max(0, newEdgePixel - 1))
+        : dayIndexAtPixelX(Math.max(0, newEdgePixel));
       let newStartOffset = state.originalStartOffset;
       let newEndOffset = state.originalEndOffset;
       if (state.side === "left") {
-        newStartOffset = Math.max(0, Math.min(state.originalStartOffset + deltaDays, newEndOffset));
+        newStartOffset = Math.max(0, Math.min(hoveredDay, newEndOffset));
       } else {
-        newEndOffset = Math.min(days.length - 1, Math.max(state.originalEndOffset + deltaDays, newStartOffset));
+        newEndOffset = Math.min(days.length - 1, Math.max(hoveredDay, newStartOffset));
       }
       setResizePreview({
         taskKey: `${teamId}:${state.task.id}`,
@@ -665,7 +744,7 @@ export function TimelineGrid({
         <div
           className={`task-card ${priorityClass} ${task.completed ? "completed" : ""} ${isSelected ? "selected" : ""} ${isDragging && dragTaskKeyRef.current !== taskKey ? "drag-passive" : ""}`}
           draggable={!readOnly && !isRenaming && !resizePreview}
-          onDragStart={(ev) => onDragStart(ev, task.id, teamId)}
+          onDragStart={(ev) => onDragStart(ev, task.id, teamId, startOffset)}
           onDragEnd={onDragEnd}
           onMouseDown={(ev) => {
             ev.stopPropagation();
@@ -763,8 +842,8 @@ export function TimelineGrid({
           title={`${task.title}\nAssigned: ${assignedNames.join(", ")}`}
           style={{
             top: CARD_TOP + row * (CARD_HEIGHT + ROW_GAP),
-            left: effectiveStartOffset * dayWidth + 2,
-            width: effectiveSpan * dayWidth - 4,
+            left: pixelLeftForDay(effectiveStartOffset) + 2,
+            width: pixelWidthForSpan(effectiveStartOffset, effectiveSpan) - 4,
             backgroundColor: fillColor.bg,
             color: fillColor.fg
           }}
@@ -941,13 +1020,14 @@ export function TimelineGrid({
             ))}
           </div>
           <div className="timeline-header" style={{ width: totalWidth, gridTemplateColumns: dayColumns }}>
-            {days.map((day) => (
+            {days.map((day, i) => (
               <div
                 key={day.date}
-                className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
-                title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
+                className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) && !breakDateSet.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                title={breakDateSet.has(day.date) ? "no practice" : practiceOverrideByDate.get(day.date)?.label ?? ((practiceHoursByDate.get(day.date) ?? 0) === 0 ? "no practice" : `${day.date}: ${Number(practiceHoursByDate.get(day.date))}h practice`)}
+                style={dayWidths[i] === 0 ? { display: "none" } : undefined}
               >
-                <div>{day.weekday}</div>
+                <div>{dayWidths[i] < 25 ? (SHORT_WEEKDAYS[day.weekday] ?? day.weekday.charAt(0)) : day.weekday}</div>
                 <div className="day-num">{day.date.slice(8, 10)}</div>
               </div>
             ))}
@@ -962,8 +1042,8 @@ export function TimelineGrid({
               key={item.id}
               className={`event-block ${item.isSingleDay ? "single-day" : ""}`}
               style={{
-                left: item.startOffset * dayWidth,
-                width: item.span * dayWidth,
+                left: pixelLeftForDay(item.startOffset),
+                width: pixelWidthForSpan(item.startOffset, item.span),
               }}
             >
               <span>{item.name}</span>
@@ -975,8 +1055,8 @@ export function TimelineGrid({
               key={item.id}
               className={`travel-block ${item.isSingleDay ? "single-day" : ""}`}
               style={{
-                left: item.startOffset * dayWidth,
-                width: item.span * dayWidth,
+                left: pixelLeftForDay(item.startOffset),
+                width: pixelWidthForSpan(item.startOffset, item.span),
               }}
             >
               <span>{item.label}</span>
@@ -988,8 +1068,8 @@ export function TimelineGrid({
               key={item.id}
               className="break-block"
               style={{
-                left: item.startOffset * dayWidth,
-                width: item.span * dayWidth,
+                left: pixelLeftForDay(item.startOffset),
+                width: pixelWidthForSpan(item.startOffset, item.span),
               }}
             >
               <span>{item.name}</span>
@@ -1001,8 +1081,8 @@ export function TimelineGrid({
           <div
             className="today-overlay"
             style={{
-              left: labelWidth + todayIndex * dayWidth,
-              width: dayWidth,
+              left: labelWidth + pixelLeftForDay(todayIndex),
+              width: dayWidths[todayIndex] ?? dayWidth,
             }}
           />
         )}
@@ -1014,15 +1094,15 @@ export function TimelineGrid({
 
           const taskGridContent = (
             <>
-              {days.map((day) => (
+              {days.map((day, i) => (
                 <div
                   key={`${team.id}-${day.date}`}
-                  className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                  className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) && !breakDateSet.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
                   onDragOver={readOnly ? undefined : onLaneDragOver}
                   onDrop={readOnly ? undefined : (ev) => onDrop(ev, day.date, team.id)}
                   onDoubleClick={readOnly ? undefined : () => onCreateTaskAt(day.date, team.id)}
-                  title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
-                  style={{ minHeight: laneHeight }}
+                  title={breakDateSet.has(day.date) ? "no practice" : practiceOverrideByDate.get(day.date)?.label ?? ((practiceHoursByDate.get(day.date) ?? 0) === 0 ? "no practice" : `${day.date}: ${Number(practiceHoursByDate.get(day.date))}h practice`)}
+                  style={dayWidths[i] === 0 ? { minHeight: laneHeight, display: "none" } : { minHeight: laneHeight }}
                 />
               ))}
 
@@ -1068,10 +1148,11 @@ export function TimelineGrid({
                             className="person-grid"
                             style={{ width: totalWidth, gridTemplateColumns: dayColumns }}
                           >
-                            {days.map((day) => (
+                            {days.map((day, i) => (
                               <div
                                 key={`${team.id}-${person.id}-${day.date}`}
                                 className={`person-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                                style={dayWidths[i] === 0 ? { display: "none" } : undefined}
                               />
                             ))}
                             {personTasks.map((task) => {
@@ -1113,8 +1194,8 @@ export function TimelineGrid({
                                     className={`assignment-indicator ${task.completed ? "completed" : ""} ${isIndicatorSelected ? "selected" : ""}`}
                                     title={task.title}
                                     style={{
-                                      left: startOffset * dayWidth + 2,
-                                      width: span * dayWidth - 4,
+                                      left: pixelLeftForDay(startOffset) + 2,
+                                      width: pixelWidthForSpan(startOffset, span) - 4,
                                       backgroundColor: color.bg,
                                     }}
                                     onMouseDown={(ev) => {
@@ -1188,18 +1269,18 @@ export function TimelineGrid({
                 className="lane-grid"
                 style={{ width: totalWidth, minHeight: laneHeight, gridTemplateColumns: dayColumns }}
               >
-                {days.map((day) => (
+                {days.map((day, i) => (
                   <div
                     key={`person-${person.id}-${day.date}`}
-                    className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
+                    className={`lane-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) && !breakDateSet.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
                     onDragOver={readOnly ? undefined : onLaneDragOver}
                     onDrop={readOnly ? undefined : (ev) => {
                       const srcTeam = ev.dataTransfer.getData("source_team_id");
                       onDrop(ev, day.date, srcTeam || firstTeamId);
                     }}
                     onDoubleClick={readOnly ? undefined : () => onCreateTaskAt(day.date, firstTeamId)}
-                    title={practiceOverrideByDate.get(day.date)?.label ?? `${day.date}: ${Number(practiceHoursByDate.get(day.date) ?? 0)}h practice`}
-                    style={{ minHeight: laneHeight }}
+                    title={breakDateSet.has(day.date) ? "no practice" : practiceOverrideByDate.get(day.date)?.label ?? ((practiceHoursByDate.get(day.date) ?? 0) === 0 ? "no practice" : `${day.date}: ${Number(practiceHoursByDate.get(day.date))}h practice`)}
+                    style={dayWidths[i] === 0 ? { minHeight: laneHeight, display: "none" } : { minHeight: laneHeight }}
                   />
                 ))}
                 {positionedTasks.map(({ task, startOffset, span, row }) => {

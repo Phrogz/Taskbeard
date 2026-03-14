@@ -77,6 +77,7 @@ function renderGrid(
       renamingTaskId={null}
       renameDraft=""
       dayWidth={35}
+      practiceTimeMode={false}
       {...handlers}
     />
   );
@@ -273,9 +274,30 @@ describe("TimelineGrid drag interactions", () => {
       throw new Error("Expected day cells to exist");
     }
 
-    expect(sunday.getAttribute("title")).toBe("2026-03-01: 0h practice");
+    expect(sunday.getAttribute("title")).toBe("no practice");
     expect(monday.getAttribute("title")).toBe("No Practice");
     expect(monday).toHaveClass("override");
+  });
+
+  it("shows 'no practice' tooltip when default hours are zero", () => {
+    const plannerZero: PlannerPayload = {
+      ...planner,
+      practices: {
+        default_hours_per_day: { sun: 0, mon: 3, tue: 4, wed: 0, thu: 0, fri: 0, sat: 0 },
+        overrides: [],
+      },
+    };
+
+    const { container } = renderGrid({}, plannerZero);
+    const dayCells = container.querySelectorAll(".timeline-header .day-cell");
+    const sunday = dayCells[0] as HTMLDivElement | undefined;
+    const monday = dayCells[1] as HTMLDivElement | undefined;
+    if (!sunday || !monday) {
+      throw new Error("Expected day cells to exist");
+    }
+
+    expect(sunday.getAttribute("title")).toBe("no practice");
+    expect(monday.getAttribute("title")).toBe("2026-03-02: 3h practice");
   });
 
   it("drop uses the left edge of the task, not the mouse position, as start date", () => {
@@ -318,8 +340,8 @@ describe("TimelineGrid drag interactions", () => {
       throw new Error("Expected timeline header and lane grid");
     }
 
-    expect(header.style.gridTemplateColumns).toBe("repeat(3, 35px)");
-    expect(laneGrid.style.gridTemplateColumns).toBe("repeat(3, 35px)");
+    expect(header.style.gridTemplateColumns).toBe("35px 35px 35px");
+    expect(laneGrid.style.gridTemplateColumns).toBe("35px 35px 35px");
   });
 
   it("positions the menu anchor at the mouse location on right-click", async () => {
