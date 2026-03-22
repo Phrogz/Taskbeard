@@ -631,6 +631,12 @@ h3.config-section-head {
   cursor: default;
 }
 
+.config-section-head .config-save-button:not(:disabled) {
+  background: goldenrod;
+  border-color: #d19a00;
+  color: #111827;
+}
+
 .editor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(max(350px, calc((100% - 2rem) / 3)), 1fr));
