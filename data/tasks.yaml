@@ -31,8 +31,8 @@ tasks:
   priority: want
 - id: order-pins
   title: Order Pins
-  start_date: '2026-02-23'
-  end_date: '2026-02-24'
+  start_date: '2026-03-24'
+  end_date: '2026-03-24'
   est_hours: 1
   completed: false
   teams: business
@@ -41,8 +41,8 @@ tasks:
   priority: want
 - id: match-scout-plan
   title: Match Scout Plan
-  start_date: '2026-03-02'
-  end_date: '2026-03-03'
+  start_date: '2026-03-26'
+  end_date: '2026-03-26'
   est_hours: 2
   completed: false
   teams: business
@@ -51,8 +51,8 @@ tasks:
   priority: want
 - id: scout-plan
   title: Scout Plan
-  start_date: '2026-03-02'
-  end_date: '2026-03-03'
+  start_date: '2026-03-24'
+  end_date: '2026-03-24'
   est_hours: 2
   completed: false
   teams: business
@@ -61,8 +61,8 @@ tasks:
   priority: want
 - id: one-sheet-facts
   title: One-Sheet Facts
-  start_date: '2026-03-04'
-  end_date: '2026-03-05'
+  start_date: '2026-03-25'
+  end_date: '2026-03-25'
   est_hours: 2
   completed: false
   teams: business
@@ -132,8 +132,8 @@ tasks:
 - id: robot-cart
   title: Robot Cart
   start_date: '2026-03-24'
-  end_date: '2026-03-29'
-  est_hours: 8
+  end_date: '2026-03-26'
+  est_hours: 6
   completed: false
   teams: build
   depends_on:
@@ -154,16 +154,16 @@ tasks:
   start_date: '2026-03-01'
   end_date: '2026-03-03'
   est_hours: 8
-  completed: false
+  completed: true
   teams: build
   depends_on:
   assigned_to: alexander
   priority: urgent
 - id: revise-shooter
   title: Revise Tweaks, Shooter
-  start_date: '2026-03-02'
-  end_date: '2026-03-04'
-  est_hours: 6
+  start_date: '2026-03-24'
+  end_date: '2026-03-25'
+  est_hours: 4
   completed: false
   teams: build
   depends_on: attach-shooter
@@ -171,8 +171,8 @@ tasks:
   priority: need
 - id: build-hopper-transit
   title: Build Hopper/ Transit
-  start_date: '2026-03-03'
-  end_date: '2026-03-04'
+  start_date: '2026-03-22'
+  end_date: '2026-03-22'
   est_hours: 4
   completed: false
   teams: build
@@ -181,9 +181,9 @@ tasks:
   priority: want
 - id: vision-l10n-testing
   title: Vision + L1On Testing + Fixes
-  start_date: '2026-03-02'
-  end_date: '2026-03-04'
-  est_hours: 6
+  start_date: '2026-03-23'
+  end_date: '2026-03-23'
+  est_hours: 8
   completed: false
   teams: code
   depends_on: attach-cameras
@@ -191,8 +191,8 @@ tasks:
   priority: want
 - id: shooter-kicker-control
   title: Shooter + Kicker Control
-  start_date: '2026-03-01'
-  end_date: '2026-03-02'
+  start_date: '2026-03-24'
+  end_date: '2026-03-26'
   est_hours: 6
   completed: true
   teams: code
@@ -201,8 +201,8 @@ tasks:
   priority: need
 - id: strategy-dashboard
   title: Strategy Dashboard
-  start_date: '2026-02-21'
-  end_date: '2026-02-24'
+  start_date: '2026-03-30'
+  end_date: '2026-04-01'
   est_hours: 5
   completed: false
   teams: code
@@ -219,17 +219,6 @@ tasks:
   depends_on: [wire-intake, wire-transit]
   assigned_to: sterling
   priority: need
-- id: current-limiting
-  title: Current Limiting
-  start_date: '2026-03-22'
-  end_date: '2026-03-23'
-  est_hours: 16
-  completed: false
-  teams: code
-  depends_on:
-  assigned_to: eli
-  priority: need
-  description: ''
 - id: cool-led-effects
   title: Cool LED Effects
   start_date: '2026-04-01'
@@ -404,8 +393,8 @@ tasks:
 - id: revise-robot-build
   title: Revise Robot Build
   start_date: '2026-03-23'
-  end_date: '2026-03-30'
-  est_hours: 8
+  end_date: '2026-03-24'
+  est_hours: 5
   completed: false
   teams: build
   depends_on: build-hopper-transit
@@ -466,10 +455,10 @@ tasks:
 - id: plan-build-autos
   title: Plan + Build Autos
   start_date: '2026-03-22'
-  end_date: '2026-03-25'
-  est_hours: 20
+  end_date: '2026-03-23'
+  est_hours: 10
   completed: false
-  teams: [code, build]
+  teams: code
   depends_on: aim-shoot-test-fix
   assigned_to: [ralph, zach]
   priority: need
@@ -492,15 +481,15 @@ tasks:
   end_date: '2026-03-29'
   est_hours: 4
   depends_on:
-  assigned_to: eli
+  assigned_to: maggie
   completed: false
   priority: need
   description: Ensure all motors have reasonable current limits applied
 - id: intake-transit-control-2
   title: Intake + Transit Control
   teams: code
-  start_date: '2026-03-21'
-  end_date: '2026-03-21'
+  start_date: '2026-03-22'
+  end_date: '2026-03-22'
   est_hours: 2
   depends_on:
   assigned_to: sterling
@@ -563,22 +552,11 @@ tasks:
   completed: false
   priority: want
   description: Visualize more things? Add sparks, fading, gradients?
-- id: more-things
-  title: More Things
-  teams: code
-  start_date: '2026-02-16'
-  end_date: '2026-02-17'
-  est_hours: 4
-  depends_on:
-  assigned_to:
-  completed: false
-  priority: need
-  description: ''
 - id: hold-intake-halfway-open
   title: Hold intake halfway open after
   teams: code
-  start_date: '2026-03-21'
-  end_date: '2026-03-21'
+  start_date: '2026-03-24'
+  end_date: '2026-03-24'
   est_hours: 0
   depends_on:
   assigned_to:
@@ -654,3 +632,14 @@ tasks:
   completed: false
   priority: want
   description: Enable driver to hold left bumper to halve drive speed?
+- id: add-motion-magic-for-everything
+  title: Add Motion Magic for Everything
+  teams: code
+  start_date: '2026-03-22'
+  end_date: '2026-03-22'
+  est_hours: 4
+  depends_on:
+  assigned_to:
+  completed: false
+  priority: need
+  description: ''

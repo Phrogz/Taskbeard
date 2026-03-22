@@ -18,6 +18,7 @@ vi.mock("./services/authApi", () => ({
 }));
 
 const { getPlanner } = await import("./services/plannerApi");
+const DAY_WIDTH_COOKIE = "taskbeard_day_width";
 
 const minimalPlanner = {
   season: { start_date: "2026-03-01", end_date: "2026-03-31" },
@@ -48,11 +49,13 @@ describe("Tab navigation", () => {
   beforeEach(() => {
     window.location.hash = "#teams";
     vi.mocked(getPlanner).mockResolvedValue(minimalPlanner as any);
+    document.cookie = `${DAY_WIDTH_COOKIE}=; path=/; max-age=0`;
   });
 
   afterEach(() => {
     cleanup();
     window.location.hash = "";
+    document.cookie = `${DAY_WIDTH_COOKIE}=; path=/; max-age=0`;
   });
 
   it("should navigate to teams view on first click of Teams from Config tab", async () => {
@@ -68,5 +71,32 @@ describe("Tab navigation", () => {
 
     await user.click(screen.getByRole("button", { name: "Teams" }));
     expect(window.location.hash).toBe("#teams");
+  });
+
+  it("should restore day width from cookie on load", async () => {
+    document.cookie = `${DAY_WIDTH_COOKIE}=42; path=/`;
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
+    });
+
+    const boardWrap = document.querySelector(".board-wrap") as HTMLElement | null;
+    expect(boardWrap).not.toBeNull();
+    expect(boardWrap?.style.getPropertyValue("--day-width")).toBe("42px");
+  });
+
+  it("should persist day width to cookie when zoom changes", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Widen day columns" }));
+
+    expect(document.cookie).toContain(`${DAY_WIDTH_COOKIE}=36`);
   });
 });

@@ -54,6 +54,24 @@ type SelectedTaskPlacement = {
   teamId: string;
 };
 
+const DAY_WIDTH_COOKIE = "taskbeard_day_width";
+const DEFAULT_DAY_WIDTH = 35;
+const MIN_DAY_WIDTH = 10;
+
+function readDayWidthFromCookie(): number {
+  const parts = document.cookie.split(";").map((item) => item.trim());
+  const raw = parts.find((item) => item.startsWith(`${DAY_WIDTH_COOKIE}=`));
+  if (!raw) return DEFAULT_DAY_WIDTH;
+
+  const value = Number(raw.slice(DAY_WIDTH_COOKIE.length + 1));
+  if (!Number.isFinite(value)) return DEFAULT_DAY_WIDTH;
+  return Math.max(MIN_DAY_WIDTH, Math.round(value));
+}
+
+function writeDayWidthCookie(value: number): void {
+  document.cookie = `${DAY_WIDTH_COOKIE}=${Math.max(MIN_DAY_WIDTH, Math.round(value))}; path=/; max-age=31536000; samesite=lax`;
+}
+
 export function App() {
   const initialView = viewFromHash(window.location.hash);
   const [planner, setPlanner] = useState<PlannerPayload | null>(null);
@@ -65,7 +83,7 @@ export function App() {
   const [selectedAssignment, setSelectedAssignment] = useState<{ taskId: string; memberId: string } | null>(null);
   const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  const [dayWidth, setDayWidth] = useState(35);
+  const [dayWidth, setDayWidth] = useState(() => readDayWidthFromCookie());
   const [practiceTimeMode, setPracticeTimeMode] = useState(false);
   const [undoStack, setUndoStack] = useState<TaskItem[][]>([]);
   const [redoStack, setRedoStack] = useState<TaskItem[][]>([]);
@@ -200,6 +218,10 @@ export function App() {
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    writeDayWidthCookie(dayWidth);
+  }, [dayWidth]);
 
   const suppressHashSync = useRef(false);
 
@@ -636,7 +658,7 @@ export function App() {
           <div className="zoom-controls">
             <button
               className="zoom-btn"
-              onClick={() => setDayWidth((w) => Math.max(10, w - 1))}
+              onClick={() => setDayWidth((w) => Math.max(MIN_DAY_WIDTH, w - 1))}
               aria-label="Narrow day columns"
             >
               &minus;

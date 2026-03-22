@@ -327,7 +327,7 @@ describe("TimelineGrid drag interactions", () => {
     fireEvent.drop(targetDay, { dataTransfer, altKey: false });
 
     expect(handlers.onMoveTask).toHaveBeenCalledTimes(1);
-    const startDateArg = handlers.onMoveTask.mock.calls[0][1];
+    const startDateArg = (handlers.onMoveTask as ReturnType<typeof vi.fn>).mock.calls[0][1];
     expect(startDateArg).toBe("2026-03-05");
   });
 

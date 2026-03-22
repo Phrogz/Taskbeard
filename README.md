@@ -29,6 +29,38 @@ uv run taskbeard start --backend-port 8000 --frontend-port 5173
 uv run taskbeard stop --timeout 10
 ```
 
+## Production Server Notes
+
+Current production host runs:
+
+- Backend as systemd service `taskbeard` on `127.0.0.1:18000`
+- Frontend as static files from `frontend/dist` served by nginx
+- Environment file at `.env.production`
+
+Deploy frontend changes:
+
+```bash
+cd /var/www/taskbeard/frontend
+npm ci
+npm run build
+sudo systemctl reload nginx
+```
+
+Deploy backend changes:
+
+```bash
+cd /var/www/taskbeard
+uv sync
+sudo systemctl restart taskbeard
+```
+
+Full restart:
+
+```bash
+sudo systemctl restart taskbeard
+sudo systemctl reload nginx
+```
+
 ## Tests
 
 ```bash

@@ -139,6 +139,7 @@ export function ConfigPage({ planner, onSaved, readOnly }: Props) {
               {doc.title}
               {!readOnly && (
                 <button
+                  className="config-save-button"
                   disabled={documents[doc.key] === originals[doc.key]}
                   onClick={async () => {
                     const ok = await updateOne(doc.key);

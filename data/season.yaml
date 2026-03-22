@@ -1,5 +1,5 @@
 season:
-  start_date: '2026-02-16'
+  start_date: '2026-03-18'
   end_date: '2026-04-26'
   timezone: America/Denver
 events:
@@ -37,4 +37,4 @@ breaks:
 - id: spring-break
   name: Spring Break
   start_date: '2026-03-16'
-  end_date: '2026-03-20'
+  end_date: '2026-03-21'
