@@ -18,12 +18,12 @@ events:
 - id: utah-regional
   name: Utah Regional
   tba: 2026utwv
-  start_date: '2026-04-16'
+  start_date: '2026-04-17'
   end_date: '2026-04-18'
   travel:
-  - date: '2026-04-14'
-    label: Repacking & Repacking the Trailer
   - date: '2026-04-15'
+    label: Repacking & Reloading the Trailer
+  - date: '2026-04-16'
     label: Travel to Utah
   - date: '2026-04-19'
     label: Return Travel

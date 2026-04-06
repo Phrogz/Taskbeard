@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Users, Flag, Trash2, Check, UserMinus, ChevronRight } from "lucide-react";
 import type { PlannerPayload, TaskItem } from "../services/plannerApi";
@@ -41,6 +41,7 @@ type Props = {
   onCreateTaskAt: (startDate: string, teamId: string) => void;
   dayWidth: number;
   practiceTimeMode: boolean;
+  hidePast: boolean;
   readOnly?: boolean;
 };
 
@@ -135,11 +136,13 @@ export function TimelineGrid({
   onCreateTaskAt,
   dayWidth,
   practiceTimeMode,
+  hidePast,
   readOnly,
 }: Props) {
   const seasonStart = planner.season.start_date;
   const seasonEnd = planner.season.end_date;
   const days = planner.dates;
+  const todayStr = useMemo(() => days.find((d) => d.is_today)?.date, [days]);
   const resizeStateRef = useRef<{
     task: TaskItem;
     side: "left" | "right";
@@ -298,14 +301,37 @@ export function TimelineGrid({
   }, [planner.events]);
 
   const dayWidths = useMemo(() => {
-    if (!practiceTimeMode) return days.map(() => dayWidth);
-    return days.map((day) => {
-      const hours = practiceHoursByDate.get(day.date) ?? 0;
-      const isBreakOrEvent = breakDateSet.has(day.date) || eventDateSet.has(day.date);
-      const effectiveHours = hours > 0 ? hours : (isBreakOrEvent ? 1 : 0);
-      return effectiveHours / 2 * dayWidth;
-    });
-  }, [practiceTimeMode, days, dayWidth, practiceHoursByDate, breakDateSet, eventDateSet]);
+    let widths: number[];
+    if (!practiceTimeMode) {
+      widths = days.map(() => dayWidth);
+    } else {
+      widths = days.map((day) => {
+        const hours = practiceHoursByDate.get(day.date) ?? 0;
+        const isBreakOrEvent = breakDateSet.has(day.date) || eventDateSet.has(day.date);
+        const effectiveHours = hours > 0 ? hours : (isBreakOrEvent ? 1 : 0);
+        return effectiveHours / 2 * dayWidth;
+      });
+    }
+    if (!hidePast) return widths;
+    if (!todayStr) return widths;
+    let earliestKeep = todayStr;
+    for (const task of planner.tasks) {
+      if (task.start_date < todayStr && task.end_date >= todayStr) {
+        if (task.start_date < earliestKeep) earliestKeep = task.start_date;
+      }
+    }
+    return widths.map((w, i) => (days[i].date < earliestKeep ? 0 : w));
+  }, [
+    hidePast,
+    practiceTimeMode,
+    days,
+    dayWidth,
+    practiceHoursByDate,
+    breakDateSet,
+    eventDateSet,
+    planner.tasks,
+    todayStr,
+  ]);
 
   const cumulativeOffsets = useMemo(() => {
     const offsets = [0];
@@ -334,7 +360,8 @@ export function TimelineGrid({
     return planner.teams.map((team) => {
       const laneTasks = planner.tasks
         .filter((task) => task.teams.includes(team.id))
-        .filter((task) => task.start_date >= seasonStart && task.start_date <= seasonEnd);
+        .filter((task) => task.start_date >= seasonStart && task.start_date <= seasonEnd)
+        .filter((task) => !hidePast || !todayStr || task.end_date >= todayStr);
       const { items: positionedTasks, rowCount } = positionLaneTasks(laneTasks, seasonStart);
       const laneHeight = CARD_TOP + rowCount * CARD_HEIGHT + (rowCount - 1) * ROW_GAP + CARD_BOTTOM;
       return {
@@ -343,7 +370,7 @@ export function TimelineGrid({
         laneHeight,
       };
     });
-  }, [planner.teams, planner.tasks, seasonStart, seasonEnd]);
+  }, [planner.teams, planner.tasks, seasonStart, seasonEnd, hidePast, todayStr]);
 
   const todayIndex = useMemo(() => days.findIndex(d => d.is_today), [days]);
 
@@ -365,12 +392,13 @@ export function TimelineGrid({
     return people.map((person) => {
       const personTasks = planner.tasks
         .filter((t) => (t.assigned_to ?? []).includes(person.id))
-        .filter((t) => t.start_date >= seasonStart && t.start_date <= seasonEnd);
+        .filter((t) => t.start_date >= seasonStart && t.start_date <= seasonEnd)
+        .filter((t) => !hidePast || !todayStr || t.end_date >= todayStr);
       const { items: positionedTasks, rowCount } = positionLaneTasks(personTasks, seasonStart);
       const laneHeight = CARD_TOP + rowCount * CARD_HEIGHT + (rowCount - 1) * ROW_GAP + CARD_BOTTOM;
       return { person, positionedTasks, laneHeight };
     });
-  }, [peopleOnlyMode, planner.members, planner.tasks, seasonStart, seasonEnd]);
+  }, [peopleOnlyMode, planner.members, planner.tasks, seasonStart, seasonEnd, hidePast, todayStr]);
 
   const labelWidth = TEAM_LABEL_WIDTH;
 
@@ -496,6 +524,23 @@ export function TimelineGrid({
     });
     return values;
   }, [planner.events, seasonStart, seasonEnd]);
+
+  const spanWidthPx = (start: number, span: number) =>
+    (cumulativeOffsets[start + span] ?? cumulativeOffsets[cumulativeOffsets.length - 1]) -
+    (cumulativeOffsets[start] ?? 0);
+
+  const visibleEventSpans = useMemo(
+    () => eventSpans.filter((item) => spanWidthPx(item.startOffset, item.span) > 0),
+    [eventSpans, cumulativeOffsets]
+  );
+  const visibleTravelSpans = useMemo(
+    () => travelSpans.filter((item) => spanWidthPx(item.startOffset, item.span) > 0),
+    [travelSpans, cumulativeOffsets]
+  );
+  const visibleBreakSpans = useMemo(
+    () => breakSpans.filter((item) => spanWidthPx(item.startOffset, item.span) > 0),
+    [breakSpans, cumulativeOffsets]
+  );
 
   const onDragStart = (ev: React.DragEvent<HTMLDivElement>, taskId: string, teamId: string, taskStartOffset: number) => {
     if (resizeStateRef.current) {
@@ -844,9 +889,10 @@ export function TimelineGrid({
             top: CARD_TOP + row * (CARD_HEIGHT + ROW_GAP),
             left: pixelLeftForDay(effectiveStartOffset) + 2,
             width: pixelWidthForSpan(effectiveStartOffset, effectiveSpan) - 4,
-            backgroundColor: fillColor.bg,
+            ...(task.completed ? { backgroundColor: fillColor.bg } : {}),
+            "--task-bg": fillColor.bg,
             color: fillColor.fg
-          }}
+          } as CSSProperties}
         >
           {!readOnly && (
             <div
@@ -1025,7 +1071,7 @@ export function TimelineGrid({
                 key={day.date}
                 className={`day-cell ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${practiceOverrideByDate.has(day.date) && !breakDateSet.has(day.date) ? "override" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
                 title={breakDateSet.has(day.date) ? "no practice" : practiceOverrideByDate.get(day.date)?.label ?? ((practiceHoursByDate.get(day.date) ?? 0) === 0 ? "no practice" : `${day.date}: ${Number(practiceHoursByDate.get(day.date))}h practice`)}
-                style={dayWidths[i] === 0 ? { display: "none" } : undefined}
+                style={dayWidths[i] === 0 ? { visibility: "hidden", pointerEvents: "none", padding: 0, borderRight: "none" } : undefined}
               >
                 <div>{dayWidths[i] < 25 ? (SHORT_WEEKDAYS[day.weekday] ?? day.weekday.charAt(0)) : day.weekday}</div>
                 <div className="day-num">{day.date.slice(8, 10)}</div>
@@ -1037,7 +1083,7 @@ export function TimelineGrid({
 
       <div className="lanes-stack" style={{ width: totalWidth + labelWidth }}>
         <div className="break-overlays" style={{ left: labelWidth, width: totalWidth }}>
-          {eventSpans.map((item) => (
+          {visibleEventSpans.map((item) => (
             <div
               key={item.id}
               className={`event-block ${item.isSingleDay ? "single-day" : ""}`}
@@ -1050,7 +1096,7 @@ export function TimelineGrid({
             </div>
           ))}
 
-          {travelSpans.map((item) => (
+          {visibleTravelSpans.map((item) => (
             <div
               key={item.id}
               className={`travel-block ${item.isSingleDay ? "single-day" : ""}`}
@@ -1063,7 +1109,7 @@ export function TimelineGrid({
             </div>
           ))}
 
-          {breakSpans.map((item) => (
+          {visibleBreakSpans.map((item) => (
             <div
               key={item.id}
               className="break-block"
@@ -1102,7 +1148,7 @@ export function TimelineGrid({
                   onDrop={readOnly ? undefined : (ev) => onDrop(ev, day.date, team.id)}
                   onDoubleClick={readOnly ? undefined : () => onCreateTaskAt(day.date, team.id)}
                   title={breakDateSet.has(day.date) ? "no practice" : practiceOverrideByDate.get(day.date)?.label ?? ((practiceHoursByDate.get(day.date) ?? 0) === 0 ? "no practice" : `${day.date}: ${Number(practiceHoursByDate.get(day.date))}h practice`)}
-                  style={dayWidths[i] === 0 ? { minHeight: laneHeight, display: "none" } : { minHeight: laneHeight }}
+                  style={dayWidths[i] === 0 ? { minHeight: laneHeight, visibility: "hidden", pointerEvents: "none", borderRight: "none" } : { minHeight: laneHeight }}
                 />
               ))}
 
@@ -1116,6 +1162,7 @@ export function TimelineGrid({
             ? planner.tasks
                 .filter((t) => t.teams.includes(team.id))
                 .filter((t) => t.start_date >= seasonStart && t.start_date <= seasonEnd)
+                .filter((t) => !hidePast || !todayStr || t.end_date >= todayStr)
             : [];
 
           if (showPeople && !peopleOnlyMode) {
@@ -1152,7 +1199,7 @@ export function TimelineGrid({
                               <div
                                 key={`${team.id}-${person.id}-${day.date}`}
                                 className={`person-day ${inactiveDateSet.has(day.date) ? "inactive" : ""} ${breakDateSet.has(day.date) ? "break" : ""} ${day.past ? "past" : ""} ${day.is_today ? "today" : ""}`}
-                                style={dayWidths[i] === 0 ? { display: "none" } : undefined}
+                                style={dayWidths[i] === 0 ? { visibility: "hidden", pointerEvents: "none", borderRight: "none" } : undefined}
                               />
                             ))}
                             {personTasks.map((task) => {
@@ -1280,7 +1327,7 @@ export function TimelineGrid({
                     }}
                     onDoubleClick={readOnly ? undefined : () => onCreateTaskAt(day.date, firstTeamId)}
                     title={breakDateSet.has(day.date) ? "no practice" : practiceOverrideByDate.get(day.date)?.label ?? ((practiceHoursByDate.get(day.date) ?? 0) === 0 ? "no practice" : `${day.date}: ${Number(practiceHoursByDate.get(day.date))}h practice`)}
-                    style={dayWidths[i] === 0 ? { minHeight: laneHeight, display: "none" } : { minHeight: laneHeight }}
+                    style={dayWidths[i] === 0 ? { minHeight: laneHeight, visibility: "hidden", pointerEvents: "none", borderRight: "none" } : { minHeight: laneHeight }}
                   />
                 ))}
                 {positionedTasks.map(({ task, startOffset, span, row }) => {

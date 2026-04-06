@@ -477,6 +477,10 @@ body {
   z-index: 4;
 }
 
+.task-card:not(.completed) {
+  background-color: color-mix(in srgb, var(--task-bg) 90%, transparent);
+}
+
 .task-menu-anchor {
   position: absolute;
   width: 0;
@@ -490,7 +494,7 @@ body {
 }
 
 .task-card.completed {
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .task-card.selected {

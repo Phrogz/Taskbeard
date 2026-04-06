@@ -38,6 +38,7 @@ type Props = {
   onCreateTaskAt: (startDate: string, teamId: string) => void;
   dayWidth: number;
   practiceTimeMode: boolean;
+  hidePast: boolean;
   readOnly?: boolean;
 };
 
@@ -65,6 +66,7 @@ export function BoardPage({
   onCreateTaskAt,
   dayWidth,
   practiceTimeMode,
+  hidePast,
   readOnly,
 }: Props) {
 
@@ -105,6 +107,7 @@ export function BoardPage({
           onCreateTaskAt={onCreateTaskAt}
           dayWidth={dayWidth}
           practiceTimeMode={practiceTimeMode}
+          hidePast={hidePast}
           readOnly={readOnly}
         />
       </div>

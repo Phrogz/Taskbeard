@@ -85,6 +85,7 @@ export function App() {
   const [renameDraft, setRenameDraft] = useState("");
   const [dayWidth, setDayWidth] = useState(() => readDayWidthFromCookie());
   const [practiceTimeMode, setPracticeTimeMode] = useState(false);
+  const [hidePast, setHidePast] = useState(false);
   const [undoStack, setUndoStack] = useState<TaskItem[][]>([]);
   const [redoStack, setRedoStack] = useState<TaskItem[][]>([]);
 
@@ -655,29 +656,46 @@ export function App() {
           Config
         </button>
         {tab === "tasks" && (
-          <div className="zoom-controls">
-            <button
-              className="zoom-btn"
-              onClick={() => setDayWidth((w) => Math.max(MIN_DAY_WIDTH, w - 1))}
-              aria-label="Narrow day columns"
-            >
-              &minus;
-            </button>
-            <button
-              className="zoom-btn"
-              onClick={() => setDayWidth((w) => w + 1)}
-              aria-label="Widen day columns"
-            >
-              +
-            </button>
+          <div
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: "5em",
+            }}
+          >
             <label className="practice-time-toggle">
               <input
                 type="checkbox"
-                checked={practiceTimeMode}
-                onChange={(e) => setPracticeTimeMode(e.target.checked)}
+                checked={hidePast}
+                onChange={(e) => setHidePast(e.target.checked)}
               />
-              Practice Time
+              Hide Past
             </label>
+            <div className="zoom-controls" style={{ marginLeft: 0 }}>
+              <button
+                className="zoom-btn"
+                onClick={() => setDayWidth((w) => Math.max(MIN_DAY_WIDTH, w - 1))}
+                aria-label="Narrow day columns"
+              >
+                &minus;
+              </button>
+              <button
+                className="zoom-btn"
+                onClick={() => setDayWidth((w) => w + 1)}
+                aria-label="Widen day columns"
+              >
+                +
+              </button>
+              <label className="practice-time-toggle">
+                <input
+                  type="checkbox"
+                  checked={practiceTimeMode}
+                  onChange={(e) => setPracticeTimeMode(e.target.checked)}
+                />
+                Practice Time
+              </label>
+            </div>
           </div>
         )}
         {authUser && (
@@ -703,6 +721,7 @@ export function App() {
           showPeople={showPeople}
           dayWidth={dayWidth}
           practiceTimeMode={practiceTimeMode}
+          hidePast={hidePast}
           readOnly={isReadOnly}
           onMoveTask={onMoveTask}
           onResizeTask={onResizeTask}

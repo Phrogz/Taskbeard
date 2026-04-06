@@ -78,6 +78,7 @@ function renderGrid(
       renameDraft=""
       dayWidth={35}
       practiceTimeMode={false}
+      hidePast={false}
       {...handlers}
     />
   );
@@ -342,6 +343,40 @@ describe("TimelineGrid drag interactions", () => {
 
     expect(header.style.gridTemplateColumns).toBe("35px 35px 35px");
     expect(laneGrid.style.gridTemplateColumns).toBe("35px 35px 35px");
+  });
+
+  it("keeps zero-hour days in grid flow in proportional mode", () => {
+    const proportionalPlanner: PlannerPayload = {
+      ...planner,
+      season: { start_date: "2026-03-01", end_date: "2026-03-04", timezone: "America/Los_Angeles" },
+      dates: [
+        { date: "2026-03-01", past: false, is_today: false, weekday: "Sun" },
+        { date: "2026-03-02", past: false, is_today: false, weekday: "Mon" },
+        { date: "2026-03-03", past: false, is_today: false, weekday: "Tue" },
+        { date: "2026-03-04", past: false, is_today: false, weekday: "Wed" },
+      ],
+      practices: {
+        default_hours_per_day: { sun: 4, mon: 2, tue: 0, wed: 2, thu: 0, fri: 0, sat: 0 },
+        overrides: [],
+      },
+    };
+
+    const { container } = renderGrid({ practiceTimeMode: true }, proportionalPlanner);
+    const header = container.querySelector(".timeline-header") as HTMLDivElement | null;
+    const laneGrid = container.querySelector(".lane-grid") as HTMLDivElement | null;
+    const dayCells = Array.from(container.querySelectorAll(".timeline-header .day-cell")) as HTMLDivElement[];
+    const laneDays = Array.from(container.querySelectorAll(".lane-row .lane-day")) as HTMLDivElement[];
+
+    if (!header || !laneGrid) {
+      throw new Error("Expected timeline header and lane grid");
+    }
+
+    expect(header.style.gridTemplateColumns).toBe("70px 35px 0px 35px");
+    expect(laneGrid.style.gridTemplateColumns).toBe("70px 35px 0px 35px");
+    expect(dayCells.length).toBe(4);
+    expect(laneDays.length).toBe(4);
+    expect(dayCells.every((cell) => cell.style.display !== "none")).toBe(true);
+    expect(laneDays.every((cell) => cell.style.display !== "none")).toBe(true);
   });
 
   it("positions the menu anchor at the mouse location on right-click", async () => {

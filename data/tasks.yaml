@@ -31,19 +31,19 @@ tasks:
   priority: want
 - id: order-pins
   title: Order Pins
-  start_date: '2026-03-24'
-  end_date: '2026-03-24'
+  start_date: '2026-04-06'
+  end_date: '2026-04-06'
   est_hours: 1
   completed: false
-  teams: business
+  teams: admin
   depends_on:
   assigned_to: oliver-p
   priority: want
 - id: match-scout-plan
   title: Match Scout Plan
-  start_date: '2026-03-26'
-  end_date: '2026-03-26'
-  est_hours: 2
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
+  est_hours: 4
   completed: false
   teams: business
   depends_on:
@@ -71,10 +71,10 @@ tasks:
   priority: want
 - id: place-roborio
   title: Place RoboRIO, APU, Battery, etc.
-  start_date: '2026-03-22'
+  start_date: '2026-03-23'
   end_date: '2026-03-23'
-  est_hours: 10
-  completed: false
+  est_hours: 6
+  completed: true
   teams: electrical
   depends_on:
   assigned_to: grady
@@ -84,7 +84,7 @@ tasks:
   start_date: '2026-03-25'
   end_date: '2026-03-26'
   est_hours: 3
-  completed: false
+  completed: true
   teams: electrical
   depends_on: place-roborio
   assigned_to: hayden
@@ -94,7 +94,7 @@ tasks:
   start_date: '2026-03-25'
   end_date: '2026-03-26'
   est_hours: 4
-  completed: false
+  completed: true
   teams: electrical
   depends_on: place-roborio
   assigned_to: clara
@@ -102,9 +102,9 @@ tasks:
 - id: attach-cameras
   title: Attach Cameras
   start_date: '2026-03-29'
-  end_date: '2026-03-30'
-  est_hours: 6
-  completed: false
+  end_date: '2026-03-29'
+  est_hours: 4
+  completed: true
   teams: [electrical, code]
   depends_on:
   assigned_to: [colin, grady]
@@ -114,7 +114,7 @@ tasks:
   start_date: '2026-03-25'
   end_date: '2026-03-26'
   est_hours: 4
-  completed: false
+  completed: true
   teams: electrical
   depends_on: wire-transit
   assigned_to:
@@ -132,9 +132,9 @@ tasks:
 - id: robot-cart
   title: Robot Cart
   start_date: '2026-03-24'
-  end_date: '2026-03-26'
-  est_hours: 6
-  completed: false
+  end_date: '2026-03-25'
+  est_hours: 4
+  completed: true
   teams: build
   depends_on:
   assigned_to: eli
@@ -161,8 +161,8 @@ tasks:
   priority: urgent
 - id: revise-shooter
   title: Revise Tweaks, Shooter
-  start_date: '2026-03-24'
-  end_date: '2026-03-25'
+  start_date: '2026-04-05'
+  end_date: '2026-04-05'
   est_hours: 4
   completed: false
   teams: build
@@ -171,10 +171,10 @@ tasks:
   priority: need
 - id: build-hopper-transit
   title: Build Hopper/ Transit
-  start_date: '2026-03-22'
-  end_date: '2026-03-22'
+  start_date: '2026-03-24'
+  end_date: '2026-03-25'
   est_hours: 4
-  completed: false
+  completed: true
   teams: build
   depends_on: attach-shooter
   assigned_to: owen
@@ -183,7 +183,7 @@ tasks:
   title: Vision + L1On Testing + Fixes
   start_date: '2026-03-23'
   end_date: '2026-03-23'
-  est_hours: 8
+  est_hours: 6
   completed: false
   teams: code
   depends_on: attach-cameras
@@ -217,7 +217,7 @@ tasks:
   completed: false
   teams: code
   depends_on: [wire-intake, wire-transit]
-  assigned_to: sterling
+  assigned_to: [sterling, eli]
   priority: need
 - id: cool-led-effects
   title: Cool LED Effects
@@ -231,9 +231,9 @@ tasks:
   priority: want
 - id: ar-simulation
   title: Augmented Reality Simulation
-  start_date: '2026-03-29'
+  start_date: '2026-03-30'
   end_date: '2026-03-31'
-  est_hours: 8
+  est_hours: 4
   completed: false
   teams: code
   depends_on:
@@ -251,9 +251,9 @@ tasks:
   priority: want
 - id: pit-scouting-material
   title: Pit Scouting Material
-  start_date: '2026-03-23'
-  end_date: '2026-03-25'
-  est_hours: 2
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
+  est_hours: 4
   completed: false
   teams: business
   depends_on:
@@ -261,9 +261,9 @@ tasks:
   priority: need
 - id: packing-list
   title: Packing List
-  start_date: '2026-03-23'
+  start_date: '2026-03-24'
   end_date: '2026-03-25'
-  est_hours: 2
+  est_hours: 4
   completed: false
   teams: business
   depends_on:
@@ -281,9 +281,9 @@ tasks:
   priority: need
 - id: verify-one-sheet
   title: Verify One-Sheet
-  start_date: '2026-03-27'
-  end_date: '2026-03-29'
-  est_hours: 1
+  start_date: '2026-04-06'
+  end_date: '2026-04-06'
+  est_hours: 2
   completed: false
   teams: business
   depends_on:
@@ -291,9 +291,9 @@ tasks:
   priority: want
 - id: sponsor-panel
   title: Sponsor Panel
-  start_date: '2026-03-25'
-  end_date: '2026-03-28'
-  est_hours: 2
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
+  est_hours: 4
   completed: false
   teams: business
   depends_on:
@@ -309,11 +309,11 @@ tasks:
   depends_on:
   assigned_to:
   priority: need
-- id: one-sheet-print
-  title: One-Sheet Design + Print
-  start_date: '2026-03-30'
-  end_date: '2026-04-02'
-  est_hours: 3
+- id: print-one-sheet
+  title: Print One-Sheet
+  start_date: '2026-04-07'
+  end_date: '2026-04-07'
+  est_hours: 2
   completed: false
   teams: business
   depends_on: verify-one-sheet
@@ -331,18 +331,18 @@ tasks:
   priority: want
 - id: googly-eyes
   title: Lots of Googly Eyes!!
-  start_date: '2026-04-02'
-  end_date: '2026-04-04'
-  est_hours: 2
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
+  est_hours: 4
   completed: false
-  teams: business
+  teams: build
   depends_on:
   assigned_to:
   priority: want
 - id: attach-robot-leds
   title: Attach Robot LEDs
-  start_date: '2026-03-30'
-  end_date: '2026-03-31'
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
   est_hours: 3
   completed: false
   teams: electrical
@@ -351,8 +351,8 @@ tasks:
   priority: need
 - id: wire-management
   title: Wire Management
-  start_date: '2026-04-01'
-  end_date: '2026-04-02'
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
   est_hours: 4
   completed: false
   teams: electrical
@@ -372,8 +372,8 @@ tasks:
   description: Extra lights on driver station mirroring Robot LEDs
 - id: check-connections
   title: Check Connections
-  start_date: '2026-04-05'
-  end_date: '2026-04-06'
+  start_date: '2026-04-06'
+  end_date: '2026-04-08'
   est_hours: 6
   completed: false
   teams: electrical
@@ -382,9 +382,9 @@ tasks:
   priority: need
 - id: wiring-diagram
   title: Wiring Diagram
-  start_date: '2026-04-05'
-  end_date: '2026-04-06'
-  est_hours: 6
+  start_date: '2026-04-07'
+  end_date: '2026-04-07'
+  est_hours: 2
   completed: false
   teams: electrical
   depends_on:
@@ -392,9 +392,9 @@ tasks:
   priority: want
 - id: revise-robot-build
   title: Revise Robot Build
-  start_date: '2026-03-23'
-  end_date: '2026-03-24'
-  est_hours: 5
+  start_date: '2026-04-05'
+  end_date: '2026-04-05'
+  est_hours: 4
   completed: false
   teams: build
   depends_on: build-hopper-transit
@@ -402,8 +402,8 @@ tasks:
   priority: need
 - id: drive-team-practice
   title: Drive Team Practice
-  start_date: '2026-03-31'
-  end_date: '2026-04-02'
+  start_date: '2026-04-06'
+  end_date: '2026-04-08'
   est_hours: 6
   completed: false
   teams: build
@@ -415,15 +415,15 @@ tasks:
   start_date: '2026-03-31'
   end_date: '2026-04-02'
   est_hours: 2
-  completed: false
+  completed: true
   teams: build
   depends_on:
   assigned_to:
-  priority: need
+  priority: want
 - id: aim-shoot-test-fix
   title: Aim + Shoot Test + Fix
-  start_date: '2026-03-24'
-  end_date: '2026-03-26'
+  start_date: '2026-04-06'
+  end_date: '2026-04-08'
   est_hours: 6
   completed: false
   teams: code
@@ -433,9 +433,9 @@ tasks:
   description: See if the shooter aim code works or needs the angle changed
 - id: test-autos
   title: Test Autos
-  start_date: '2026-03-30'
-  end_date: '2026-04-02'
-  est_hours: 5
+  start_date: '2026-04-06'
+  end_date: '2026-04-08'
+  est_hours: 6
   completed: false
   teams: code
   depends_on: plan-build-autos
@@ -444,9 +444,9 @@ tasks:
   description: Ensure that autos we have written work as desired on the field
 - id: polish-code
   title: Polish Code
-  start_date: '2026-04-03'
+  start_date: '2026-04-05'
   end_date: '2026-04-05'
-  est_hours: 5
+  est_hours: 4
   completed: false
   teams: code
   depends_on: test-autos
@@ -457,10 +457,10 @@ tasks:
   start_date: '2026-03-22'
   end_date: '2026-03-23'
   est_hours: 10
-  completed: false
+  completed: true
   teams: code
   depends_on: aim-shoot-test-fix
-  assigned_to: [ralph, zach]
+  assigned_to: [zach, eli]
   priority: need
   description: Review Oliver's autos, ensure each works as desired, add more if needed,
     e.g. a bulldozing auto?
@@ -477,46 +477,34 @@ tasks:
 - id: current-limiting-2
   title: Current Limiting
   teams: code
-  start_date: '2026-03-29'
-  end_date: '2026-03-29'
-  est_hours: 4
+  start_date: '2026-03-22'
+  end_date: '2026-03-23'
+  est_hours: 13
   depends_on:
-  assigned_to: maggie
-  completed: false
+  assigned_to: [maggie, eli]
+  completed: true
   priority: need
   description: Ensure all motors have reasonable current limits applied
-- id: intake-transit-control-2
-  title: Intake + Transit Control
-  teams: code
-  start_date: '2026-03-22'
-  end_date: '2026-03-22'
-  est_hours: 2
-  depends_on:
-  assigned_to: sterling
-  completed: false
-  priority: need
-  description: Code to extend/retract intake and run intake and transit at the right
-    times
 - id: test-vision-l10n
   title: Test Vision & L10n
   teams: code
-  start_date: '2026-03-24'
-  end_date: '2026-03-25'
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
   est_hours: 4
   depends_on:
   assigned_to:
   completed: false
   priority: need
   description: Ensure the vision system works with AprilTags, providing better localization.
-- id: cancoders-for-shooter
-  title: CANcoders for shooter
+- id: cancoder-for-intake
+  title: CANcoder for intake
   teams: code
-  start_date: '2026-03-22'
+  start_date: '2026-03-23'
   end_date: '2026-03-23'
-  est_hours: 16
+  est_hours: 6
   depends_on:
   assigned_to:
-  completed: false
+  completed: true
   priority: need
   description: ''
 - id: use-cancoders-for-swerve
@@ -552,23 +540,11 @@ tasks:
   completed: false
   priority: want
   description: Visualize more things? Add sparks, fading, gradients?
-- id: hold-intake-halfway-open
-  title: Hold intake halfway open after
-  teams: code
-  start_date: '2026-03-24'
-  end_date: '2026-03-24'
-  est_hours: 0
-  depends_on:
-  assigned_to:
-  completed: false
-  priority: need
-  description: Maybe only a want if a fully retracted intake is not in the way of
-    the shooter and does not increase our hopper capacity
 - id: tune-fixed-distance-shooting
   title: Tune fixed-distance shooting
   teams: code
-  start_date: '2026-03-26'
-  end_date: '2026-03-28'
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
   est_hours: 4
   depends_on:
   assigned_to:
@@ -591,9 +567,9 @@ tasks:
 - id: test-firing-while-moving
   title: Test firing while moving
   teams: code
-  start_date: '2026-03-28'
-  end_date: '2026-03-30'
-  est_hours: 4
+  start_date: '2026-03-30'
+  end_date: '2026-04-01'
+  est_hours: 6
   depends_on:
   assigned_to:
   completed: false
@@ -629,17 +605,47 @@ tasks:
   est_hours: 4
   depends_on:
   assigned_to:
-  completed: false
+  completed: true
   priority: want
   description: Enable driver to hold left bumper to halve drive speed?
 - id: add-motion-magic-for-everything
   title: Add Motion Magic for Everything
   teams: code
-  start_date: '2026-03-22'
-  end_date: '2026-03-22'
+  start_date: '2026-03-23'
+  end_date: '2026-03-23'
+  est_hours: 4
+  depends_on:
+  assigned_to: eli
+  completed: true
+  priority: need
+  description: ''
+- id: keep-fuel-inside-surgical-tubing
+  title: Keep Fuel Inside (Surgical Tubing)
+  teams: build
+  start_date: '2026-03-31'
+  end_date: '2026-04-02'
+  est_hours: 6
+  depends_on:
+  assigned_to:
+  completed: true
+  priority: need
+- id: fix-intake-to-not-clog
+  title: Fix Intake to Not Clog
+  teams: build
+  start_date: '2026-03-30'
+  end_date: '2026-04-01'
+  est_hours: 6
+  depends_on:
+  assigned_to:
+  completed: true
+  priority: urgent
+- id: ground-plate
+  title: Ground Plate
+  teams: build
+  start_date: '2026-04-06'
+  end_date: '2026-04-07'
   est_hours: 4
   depends_on:
   assigned_to:
   completed: false
   priority: need
-  description: ''
